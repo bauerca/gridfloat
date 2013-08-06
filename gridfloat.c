@@ -84,8 +84,8 @@ int grid_float_open(const char *hdr_file, const char *flt_file, struct grid_floa
 
 static
 int get_line(int ii, int jj_start, int jj_end, const struct grid_float *gf, float *line) {
-    fseek(gf->flt, sizeof(float) * (ii * gf->hdr.nx + jj_start), SEEK_SET);
-    fread((void *)line, sizeof(float), jj_end - jj_start, gf->flt);
+    fseek(gf->flt, 4 * (ii * gf->hdr.nx + jj_start), SEEK_SET);
+    fread((void *)line, 4, jj_end - jj_start, gf->flt);
 }
 
 
@@ -137,6 +137,7 @@ int grid_float_data(const struct grid_float *gf, const struct grid_float_bounds 
             //ii_new = get_ii(lat, hdr);
             ii_new = (int) ((hdr->top - lat) / hdr->cellsize);
 
+
             if (ii_new == ii + 1) {
                 line_swp = line1;
                 line1 = line2;
@@ -149,7 +150,14 @@ int grid_float_data(const struct grid_float *gf, const struct grid_float_bounds 
             }
             ii = ii_new;
 
-            wy = (lat - (hdr->top - ii * hdr->cellsize)) / hdr->cellsize;
+
+            wy = (hdr->top - ii * hdr->cellsize - lat) / hdr->cellsize;
+
+/*
+            fprintf(stdout, "latitude: %f, line1 lat: %f, line2 lat: %f, wy: %f\n",
+                lat, (hdr->top - ii * hdr->cellsize),
+                (hdr->top - (ii + 1) * hdr->cellsize), wy);
+*/
 
             lng = bounds->left + 0.5 * dx;
 

@@ -1,8 +1,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
+#include <math.h>
 
 #include "gridfloat.h"
+#include "gfpng.h"
 
 
 int print_usage(void) {
@@ -24,6 +27,7 @@ int print_usage(void) {
         "\n"
         "Options:\n"
         "  -h:  Print this help message.\n"
+        "  -i:  Print helpful info derived from GridFloat header file.\n"
         "  -R:  Resolution of extraction. If a single integer is\n"
         "       supplied, then the resolution is the same in both\n"
         "       directions. Otherwise, the format is (by example):\n"
@@ -35,21 +39,52 @@ int print_usage(void) {
         "  -B:  Specify extraction bounds using a comma-separated\n"
         "       list of the form LEFT,RIGHT,BOTTOM,TOP. E.g.\n"
         "       '-B -123.112,-123.110,42.100,42.101'.\n"
+        "  -n:  Longitude midpoint of extraction. Must use with '-s'\n"
+        "       option. Example: '-n 42'.\n"
+        "  -w:  Latitude midpoint of extraction. Must use with '-s'\n"
+        "       option. Example: '-w 123' (notice there is no minus\n"
+        "       sign here).\n"
+        "  -p:  Lat/Lng midpoint of extraction. Must use with '-s'\n"
+        "       option. Example: '-p -123,42'.\n"
+        "  -s:  Size of box (in degrees) around midpoint. Used with '-p'\n"
+        "       and '-w','-n' options. Examples: '-s 1.0x1.0' or just '-s 1'.\n"
+        "  -T:  Transpose and invert along y before printing the array\n"
+        "       (so that a[i, j] gives longitude increasing with i and\n"
+        "       latitude increasing with j).\n"
+        "\n"
+        "Examples:\n"
+        "  All of the following are equivalent.\n"
+        "\n"
+        "  gridfloat -l -123 -r -122 -b 42 -t 43 file.{hdr,flt}\n"
+        "  gridfloat -B -123,-122,42,43 file.{hdr,flt}\n"
+        "  gridfloat -p -122.5,42.5 -s 1 file.{hdr,flt}\n"
+        "  gridfloat -w 122.5 -n 42.5 -s 1x1 file.{hdr,flt}\n"
+        "\n"
     );
 }
+
+const float BAD_LATLNG = -1000.0;
 
 int main(int argc, char *argv[]) {
 
     int i, count, opt, len;
-    float *data;
-    int resolution[2] = {128, 128};
+    gf_float *data;
     char *fileish;
+    char flt[2048], hdr[2048], savename[2048];
     struct grid_float gf;
-    struct grid_float_bounds bounds;
-    double *bounds_view[4] = {&bounds.left, &bounds.right, &bounds.bottom, &bounds.top};
-    char flt[2048], hdr[2048];
+    struct gf_grid grid;
+    struct gf_bounds *b = &grid.bounds;
+    double *b_view[4] = {&b->left, &b->right, &b->bottom, &b->top};
+    int *res_view[2] = {&grid.nx, &grid.ny};
+    double midpt[2] = {BAD_LATLNG, BAD_LATLNG};
+    double size[2] = {0, 0};
+    int info = 0, from_point = 0, xy = 0, save = 0;
+    double n_sun[3];
+    double polar = 30.0, azimuth = 45.0;
 
-    while ((opt = getopt(argc, argv, "hR:l:r:b:t:B:")) != -1) {
+    grid.nx = grid.ny = 128;
+
+    while ((opt = getopt(argc, argv, "hiTR:l:r:b:t:B:p:n:w:s:o:P:A:")) != -1) {
         switch (opt) {
         case 'h':
             print_usage();
@@ -58,7 +93,7 @@ int main(int argc, char *argv[]) {
             /* Look for 'x' in optarg */
             count = 0;
             while (optarg != NULL) {
-                resolution[count] = atoi(strsep(&optarg, "x"));
+                *res_view[count] = atoi(strsep(&optarg, "x"));
                 count++;
             }
 
@@ -67,25 +102,25 @@ int main(int argc, char *argv[]) {
                     "or '128' for 128x128\n");
                 exit(EXIT_FAILURE);
             } else if (count == 1) {
-                resolution[1] = resolution[0];
+                grid.ny = grid.nx;
             }
             break;
         case 'l':
-            bounds.left = atof(optarg);
+            b->left = atof(optarg);
             break;
         case 'r':
-            bounds.right = atof(optarg);
+            b->right = atof(optarg);
             break;
         case 'b':
-            bounds.bottom = atof(optarg);
+            b->bottom = atof(optarg);
             break;
         case 't':
-            bounds.top = atof(optarg);
+            b->top = atof(optarg);
             break;
         case 'B':
             count = 0;
             while (optarg != NULL) {
-                *bounds_view[count] = atof(strsep(&optarg, ","));
+                *b_view[count] = atof(strsep(&optarg, ","));
                 count++;
             }
 
@@ -95,10 +130,71 @@ int main(int argc, char *argv[]) {
                 exit(EXIT_FAILURE);
             }
             break;
+        case 's':
+            count = 0;
+            while (optarg != NULL) {
+                size[count] = atof(strsep(&optarg, "x"));
+                count++;
+            }
+
+            if (count == 1) {
+                size[1] = size[0];
+            } else if (count > 2) {
+                fprintf(stderr, "Bad -s option. Too many params.\n  Examples: "
+                    "'-s 1.0x1.0' or just '-s 1.0'.\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case 'w':
+            from_point = 1;
+            midpt[0] = -atof(optarg);
+            break;
+        case 'n':
+            from_point = 1;
+            midpt[1] = atof(optarg);
+            break;
+        case 'p':
+            from_point = 1;
+            count = 0;
+            while (optarg != NULL) {
+                midpt[count] = atof(strsep(&optarg, ","));
+                count++;
+            }
+
+            if (count != 2) {
+                fprintf(stderr, "Bad -p option. Need lat and lng.\n  Example: "
+                    "'-113.0,-112.9'\n");
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case 'i':
+            info = 1;
+            break;
+        case 'T':
+            xy = 1;
+            break;
+        case 'o':
+            save = 1;
+            strcpy(savename, optarg);
+            break;
+        case 'P':
+            polar = atof(optarg);
+            break;
+        case 'A':
+            azimuth = atof(optarg);
+            break;
         default:
             print_usage();
             exit(EXIT_FAILURE);
         }
+    }
+
+
+    if (from_point) {
+        b->left = midpt[0] - 0.5 * size[0];
+        b->right = midpt[0] + 0.5 * size[0];
+        b->bottom = midpt[1] - 0.5 * size[1];
+        b->top = midpt[1] + 0.5 * size[1];
     }
 
     /* Final unhandled args are gridfloat and header filename pair
@@ -129,16 +225,50 @@ int main(int argc, char *argv[]) {
         optind++;
     }
 
+
     if (grid_float_open(hdr, flt, &gf)) {
         print_usage();
         exit(EXIT_FAILURE);
     }
 
-    grid_float_data(&gf, &bounds, resolution[0], resolution[1], &data);
-    grid_float_print(resolution[0], resolution[1], data);
+    if (info) {
+        fprintf(stdout,
+            "GridFloat file info:\n"
+            "  float file: %s\n"
+            "  header file: %s\n"
+            "  tile bounds:\n"
+            "    left: %f\n"
+            "    right: %f\n"
+            "    bottom: %f\n"
+            "    top: %f\n"
+            "  cellsize: %f degrees\n"
+            "  resolution: %ldx%ld\n",
+            flt, hdr, gf.hdr.left, gf.hdr.right, gf.hdr.bottom, gf.hdr.top,
+            gf.hdr.cellsize, gf.hdr.nx, gf.hdr.ny);
+    } else if (save) {
+        if ((len = strlen(savename)) > 4) {
+            if (!strcmp(savename + len - 4, ".png")) {
+                polar *= PI / 180.0;
+                azimuth *= PI / 180.0;
+
+                n_sun[0] = cos(polar) * cos(azimuth);
+                n_sun[1] = cos(polar) * sin(azimuth);
+                n_sun[2] = sin(polar);
+                gf_relief_shade(&gf, &grid, n_sun, savename);
+                exit(EXIT_SUCCESS);
+            }
+        }
+
+        fprintf(stderr, "Only png output supported.\n");
+        exit(EXIT_FAILURE);
+
+    } else {
+        data = (gf_float *)malloc(grid.nx * grid.ny * sizeof(gf_float));
+        grid_float_bilinear_interpolate(&gf, &grid, data);
+        grid_float_print(&grid, data, xy);
+        free(data);
+    }
+
     grid_float_close(&gf);
-
-    free(data);
-
     exit(EXIT_SUCCESS);
 }

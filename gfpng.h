@@ -5,7 +5,7 @@
 
 #include "gridfloat.h"
 
-int gf_relief_shade(
+void gf_relief_shade(
     const struct grid_float *gf,
     const struct gf_grid *grid,
     double *n_sun,

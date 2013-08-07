@@ -5,10 +5,11 @@
 #include <math.h>
 
 #include "gridfloat.h"
+#include "linear.h"
 #include "gfpng.h"
 
 
-int print_usage(void) {
+void print_usage(void) {
     fprintf(stdout,
         "Summary:\n"
         "  Extract subgrids of data from a GridFloat file. GridFloat\n"
@@ -52,8 +53,18 @@ int print_usage(void) {
         "       (so that a[i, j] gives longitude increasing with i and\n"
         "       latitude increasing with j).\n"
         "\n"
+        "PNG output options:\n"
+        "  -o:  Output subgrid data to a file. Must match *.png.\n"
+        "  -A:  Azimuthal angle (in degrees) of view toward sun (for\n"
+        "       relief shading). 0 means sun is East, 90 North, etc.\n"
+        "       Default: 45 (NE).\n"
+        "  -P:  Polar angle (in degrees) of view toward sun (for\n"
+        "       relief shading). 0 means sun is on horizon, 90 when\n"
+        "       directly overhead. Default: 30.\n"
+        "\n"
         "Examples:\n"
-        "  All of the following are equivalent.\n"
+        "  All of the following are equivalent and simply print data\n"
+        "  to stdout.\n"
         "\n"
         "  gridfloat -l -123 -r -122 -b 42 -t 43 file.{hdr,flt}\n"
         "  gridfloat -B -123,-122,42,43 file.{hdr,flt}\n"
@@ -67,7 +78,7 @@ const float BAD_LATLNG = -1000.0;
 
 int main(int argc, char *argv[]) {
 
-    int i, count, opt, len;
+    int count, opt, len;
     gf_float *data;
     char *fileish;
     char flt[2048], hdr[2048], savename[2048];
@@ -243,7 +254,11 @@ int main(int argc, char *argv[]) {
             "    top: %f\n"
             "  cellsize: %f degrees\n"
             "  resolution: %ldx%ld\n",
-            flt, hdr, gf.hdr.left, gf.hdr.right, gf.hdr.bottom, gf.hdr.top,
+            flt, hdr,
+            gf.hdr.bounds.left,
+            gf.hdr.bounds.right,
+            gf.hdr.bounds.bottom,
+            gf.hdr.bounds.top,
             gf.hdr.cellsize, gf.hdr.nx, gf.hdr.ny);
     } else if (save) {
         if ((len = strlen(savename)) > 4) {

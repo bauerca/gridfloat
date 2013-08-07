@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #include "gfpng.h"
-#include "gridfloat.h"
+#include "cubic.h"
 
 static
 void write_row_callback(png_structp png_ptr, png_uint_32 row, int pass) {
@@ -10,7 +10,7 @@ void write_row_callback(png_structp png_ptr, png_uint_32 row, int pass) {
 }
 
 static
-int gf_relief_shade_kernel(gf_float *quad, double cellsize, double *w, double *latlng, void *xtras, void **data_ptr) {
+int gf_relief_shade_kernel(gf_float nine[][3], double cellsize, double *w, double *latlng, void *xtras, void **data_ptr) {
     int i;
     png_byte **shade_ptr = (png_byte **)data_ptr;
     double grad[2] = {GF_NULL_VAL, GF_NULL_VAL}, *grad_view, n_surf[3], *n_sun, norm, shade;
@@ -19,7 +19,7 @@ int gf_relief_shade_kernel(gf_float *quad, double cellsize, double *w, double *l
 
     n_sun = (double *)xtras;
 
-    grid_float_bilinear_gradient_kernel(quad, cellsize, w, latlng, (void *)NULL, (void **)&grad_view);
+    gf_bicubic_gradient_kernel(nine, cellsize, w, latlng, (void *)NULL, (void **)&grad_view);
 
     if (grad[0] == GF_NULL_VAL || grad[1] == GF_NULL_VAL) {
         fprintf(stderr, "gf_relief_shade_kernel: Something wrong. Please report.\n");
@@ -27,7 +27,7 @@ int gf_relief_shade_kernel(gf_float *quad, double cellsize, double *w, double *l
     }
 
     //printf("slope: %f\n", sqrt(grad[0] * grad[0] + grad[1] * grad[1]));
-    printf("latlng: (%f, %f), weights: (%f, %f), grad: (%f, %f)\n", latlng[0], latlng[1], w[0], w[1], grad[0], grad[1]);
+    //printf("latlng: (%f, %f), weights: (%f, %f), grad: (%f, %f)\n", latlng[0], latlng[1], w[0], w[1], grad[0], grad[1]);
 
     norm = sqrt(1.0 + grad[0] * grad[0] + grad[1] * grad[1]);
     n_surf[0] = -grad[0] / norm;
@@ -52,14 +52,14 @@ int gf_set_null_png_byte(void **data_ptr) {
     return 0;
 }
 
-int gf_relief_shade(const struct grid_float *gf, const struct gf_grid *grid, double *n_sun, const char *filename) {
+void gf_relief_shade(const struct grid_float *gf, const struct gf_grid *grid, double *n_sun, const char *filename) {
     int i;
     png_byte *shade, **shade_rows;
     
     shade = (png_byte *)malloc(grid->nx * grid->ny * sizeof(png_byte));
     shade_rows = (png_byte **)malloc(grid->ny * sizeof(png_byte *));
 
-    grid_float_bilinear(gf, grid, (void *)n_sun,
+    gf_bicubic(gf, grid, (void *)n_sun,
         &gf_relief_shade_kernel, &gf_set_null_png_byte, (void *)shade);
 
     for (i = 0; i < grid->ny; ++i) {

@@ -34,6 +34,8 @@ void gf_init_grid_bounds(gf_grid *grid, double left, double right, double bottom
 
 void gf_lengths(double lat, double lng, double dlat, double dlng, double ecc, double *dy, double *dx);
 
+void gf_cellsize_meters(gf_grid *grid, double *dxm, double *dym);
+
 int gf_parse_hdr(const char *hdr_file, gf_struct *gf);
 
 int gf_open(const char *hdr_file, const char *flt_file, gf_struct *gf);

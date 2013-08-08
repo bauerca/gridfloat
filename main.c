@@ -7,6 +7,7 @@
 #include "gridfloat.h"
 #include "linear.h"
 #include "gfpng.h"
+#include "gfstl.h"
 
 
 void print_usage(void) {
@@ -267,12 +268,15 @@ int main(int argc, char *argv[]) {
             polar *= PI / 180.0;
             azimuth *= PI / 180.0;
 
-            gf_print_grid_info(&to_grid);
-
             n_sun[0] = cos(polar) * cos(azimuth);
             n_sun[1] = cos(polar) * sin(azimuth);
             n_sun[2] = sin(polar);
             gf_relief_shade(&gf, &to_grid, n_sun, savename);
+        } else if (len > 4 && !strcmp(savename + len - 4, ".stl")) {
+            data = (gf_float *)malloc(to_grid.nx * to_grid.ny * sizeof(gf_float));
+            gf_bilinear_interpolate(&gf, &to_grid, data);
+            gf_save_stl(&to_grid, data, savename);
+            free(data);
         } else {
             data = (gf_float *)malloc(to_grid.nx * to_grid.ny * sizeof(gf_float));
             gf_bilinear_interpolate(&gf, &to_grid, data);

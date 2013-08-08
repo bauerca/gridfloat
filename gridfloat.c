@@ -53,6 +53,15 @@ void gf_lengths(double lat, double lng, double dlat, double dlng, double ecc, do
     }
 }
 
+void gf_cellsize_meters(gf_grid *grid, double *dxm, double *dym) {
+    double lat, lng;
+
+    lat = 0.5 * (grid->top + grid->bottom);
+    lng = 0.5 * (grid->left + grid->right);
+
+    gf_lengths(lat, lng, grid->dy, grid->dx, 0.0, dxm, dym);
+}
+
 int gf_parse_hdr(const char *hdr_file, gf_struct *gf) {
     FILE *fp;
     char line[LINE_BUF];

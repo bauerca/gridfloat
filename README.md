@@ -2,6 +2,16 @@
 
 Slice and dice GridFloat files from the command line.
 
+```
+> wget -O ./n46w122.zip "http://gisdata.usgs.gov/TDDS/DownloadFile.php?TYPE=ned3f_zip&FNAME=n46w122.zip&ORIG=RVS"
+> unzip n46w122.zip
+> ./gridfloat -n 45.37344 -w 121.69566 -s 0.2 -R 512 -A 180 -P 20 -o mthood_sunset.png ./n46w122/floatn46w122_13
+```
+
+![Mt. Hood](https://raw.github.com/bauerca/gridfloat/master/img/mthood_sunset.png)
+
+Boom.
+
 ## Installation
 
 The following will produce the executable, `gridfloat` in

@@ -10,7 +10,7 @@ void write_row_callback(png_structp png_ptr, png_uint_32 row, int pass) {
 }
 
 static
-int gf_relief_shade_kernel(gf_float nine[][3], double cellsize, double *w, double *latlng, void *xtras, void **data_ptr) {
+int gf_relief_shade_kernel(gf_float nine[][3], const gf_grid *from_grid, double *w, double *latlng, void *xtras, void **data_ptr) {
     int i;
     png_byte **shade_ptr = (png_byte **)data_ptr;
     double grad[2] = {GF_NULL_VAL, GF_NULL_VAL}, *grad_view, n_surf[3], *n_sun, norm, shade;
@@ -19,15 +19,12 @@ int gf_relief_shade_kernel(gf_float nine[][3], double cellsize, double *w, doubl
 
     n_sun = (double *)xtras;
 
-    gf_bicubic_gradient_kernel(nine, cellsize, w, latlng, (void *)NULL, (void **)&grad_view);
+    gf_bicubic_gradient_kernel(nine, from_grid, w, latlng, (void *)NULL, (void **)&grad_view);
 
     if (grad[0] == GF_NULL_VAL || grad[1] == GF_NULL_VAL) {
         fprintf(stderr, "gf_relief_shade_kernel: Something wrong. Please report.\n");
         return -1;
     }
-
-    //printf("slope: %f\n", sqrt(grad[0] * grad[0] + grad[1] * grad[1]));
-    //printf("latlng: (%f, %f), weights: (%f, %f), grad: (%f, %f)\n", latlng[0], latlng[1], w[0], w[1], grad[0], grad[1]);
 
     norm = sqrt(1.0 + grad[0] * grad[0] + grad[1] * grad[1]);
     n_surf[0] = -grad[0] / norm;

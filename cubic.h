@@ -10,7 +10,7 @@ int gf_bicubic(
     void *set_data_xtras,
     int (*set_data)(
         gf_float nine[][3],
-        double cellsize,
+        const gf_grid *from_grid,
         double *weights,
         double *latlng,
         void *xtras,
@@ -21,7 +21,7 @@ int gf_bicubic(
     void *data
 );
 
-int gf_bicubic_gradient_kernel(gf_float nine[][3], double cellsize, double *w, double *latlng, void *xtras, void **data_ptr);
+int gf_bicubic_gradient_kernel(gf_float nine[][3], const gf_grid *from_grid, double *w, double *latlng, void *xtras, void **data_ptr);
 
 int gf_bicubic_gradient(const gf_struct *gf, const gf_grid *to_grid, double *gradient);
 

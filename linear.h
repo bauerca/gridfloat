@@ -14,7 +14,7 @@ int gf_bilinear(
     void *set_data_xtras,
     int (*set_data)(
         gf_float *quad,
-        double cellsize,
+        const gf_grid *from_grid,
         double *weights,
         double *latlng,
         void *xtras,
@@ -25,11 +25,11 @@ int gf_bilinear(
     void *data
 );
 
-int gf_bilinear_interpolate_kernel(gf_float *quad, double cellsize, double *w, double *latlng, void *xtras, void **data_ptr);
+int gf_bilinear_interpolate_kernel(gf_float *quad, const gf_grid *from_grid, double *w, double *latlng, void *xtras, void **data_ptr);
 
 int gf_bilinear_interpolate(const gf_struct *gf, const gf_grid *to_grid, gf_float *data);
 
-int gf_bilinear_gradient_kernel(gf_float *quad, double cellsize, double *w, double *latlng, void *xtras, void **data_ptr);
+int gf_bilinear_gradient_kernel(gf_float *quad, const gf_grid *from_grid, double *w, double *latlng, void *xtras, void **data_ptr);
 
 int gf_bilinear_gradient(const gf_struct *gf, const gf_grid *to_grid, double *gradient);
 

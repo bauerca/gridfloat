@@ -17,21 +17,12 @@ void gf_init_grid_point(gf_grid *grid, double lat, double lng, double width, dou
     grid->bottom = lat - 0.5 * height;
     grid->top = lat + 0.5 * height;
 
-    grid->dx = (grid->right - grid->left) / ((double)grid->nx);
-    grid->dy = (grid->top - grid->bottom) / ((double)grid->ny);
+    grid->dx = (grid->right - grid->left) / ((double)(grid->nx - 1));
+    grid->dy = (grid->top - grid->bottom) / ((double)(grid->ny - 1));
 }
 
 void gf_init_grid_bounds(gf_grid *grid, double left, double right, double bottom, double top, int nlat, int nlng) {
-    grid->ny = nlat;
-    grid->nx = nlng;
-
-    grid->left = left;
-    grid->right = right;
-    grid->bottom = bottom;
-    grid->top = top;
-
-    grid->dx = (grid->right - grid->left) / ((double)grid->nx);
-    grid->dy = (grid->top - grid->bottom) / ((double)grid->ny);
+    gf_init_grid_point(grid, 0.5 * (top + bottom), 0.5 * (left + right), right - left, top - bottom, nlat, nlng);
 }
 
 void gf_lengths(double lat, double lng, double dlat, double dlng, double ecc, double *dx, double *dy) {
@@ -126,7 +117,7 @@ void gf_close(gf_struct *gf) {
     }
 }
 
-int grid_float_open(const char *hdr_file, const char *flt_file, gf_struct *gf) {
+int gf_open(const char *hdr_file, const char *flt_file, gf_struct *gf) {
     if (gf_parse_hdr(hdr_file, gf) != 0) {
         return -1;
     }
@@ -204,7 +195,6 @@ void gf_print(const gf_grid *grid, gf_float *data, int xy) {
 
 int gf_write_hdr(gf_grid *grid, const char *filename) {
     FILE *fp;
-    char line[LINE_BUF];
 
     fp = fopen(filename, "w");
     if (fp == NULL) {
@@ -247,4 +237,24 @@ void gf_save(gf_grid *grid, gf_float *data, const char *flt_filename) {
         fprintf(stderr, "Could not open %s for writing.\n", filename);
         return;
     }
+}
+
+void gf_print_grid_info(gf_grid *grid) {
+    fprintf(stdout,
+        "grid info:\n"
+        "  bounds:\n"
+        "    left: %f\n"
+        "    right: %f\n"
+        "    bottom: %f\n"
+        "    top: %f\n"
+        "  cellsize: %fx%f degrees\n"
+        "  resolution: %dx%d\n",
+        grid->left,
+        grid->right,
+        grid->bottom,
+        grid->top,
+        grid->dx,
+        grid->dy,
+        grid->nx,
+        grid->ny);
 }

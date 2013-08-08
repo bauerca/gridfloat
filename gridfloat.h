@@ -32,7 +32,7 @@ void gf_init_grid_point(gf_grid *grid, double lat, double lng, double width, dou
 
 void gf_init_grid_bounds(gf_grid *grid, double left, double right, double bottom, double top, int nlat, int nlng);
 
-void gf_lengths(double lat, double lng, double dlat, double dlng, double ecc, double *dx, double *dy);
+void gf_lengths(double lat, double lng, double dlat, double dlng, double ecc, double *dy, double *dx);
 
 int gf_parse_hdr(const char *hdr_file, gf_struct *gf);
 
@@ -45,5 +45,7 @@ int gf_get_line(long ii, long jj_start, long jj_end, const gf_struct *gf, gf_flo
 void gf_print(const gf_grid *grid, gf_float *data, int xy);
 
 void gf_save(gf_grid *grid, gf_float *data, const char *prefix);
+
+void gf_print_grid_info(gf_grid *grid);
 
 #endif

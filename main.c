@@ -32,7 +32,8 @@ void print_usage(void) {
         "  -R:  Resolution of extraction. If a single integer is\n"
         "       supplied, then the resolution is the same in both\n"
         "       directions. Otherwise, the format is (by example):\n"
-        "       '-R 128x256'.\n"
+        "       '-R 128x256' where the first number is the resolution\n"
+        "       in the x-direction (along lines of latitude).\n"
         "  -l:  Left bound for extraction.\n"
         "  -r:  Right bound for extraction.\n"
         "  -b:  Bottom bound for extraction.\n"
@@ -48,13 +49,19 @@ void print_usage(void) {
         "  -p:  Lat/Lng midpoint of extraction. Must use with '-s'\n"
         "       option. Example: '-p -123,42'.\n"
         "  -s:  Size of box (in degrees) around midpoint. Used with '-p'\n"
-        "       and '-w','-n' options. Examples: '-s 1.0x1.0' or just '-s 1'.\n"
+        "       and '-n','-w' options. Examples: '-s 1.0x1.0' or just '-s 1'.\n"
+        "       If a rectangular size is requested, the first number refers\n"
+        "       to the width of the box (along x; i.e. along lines of\n"
+        "       latitude).\n"
         "  -T:  Transpose and invert along y before printing the array\n"
         "       (so that a[i, j] gives longitude increasing with i and\n"
         "       latitude increasing with j).\n"
+        "  -o:  Output subgrid data to a file. Detects output format based\n"
+        "       on file extension. Supported: (.png, .flt). If a GridFloat\n"
+        "       file is written (.flt), an accompanying header file (.hdr)\n"
+        "       will also be written with the same prefix.\n"
         "\n"
         "PNG output options:\n"
-        "  -o:  Output subgrid data to a file. Must match *.png.\n"
         "  -A:  Azimuthal angle (in degrees) of view toward sun (for\n"
         "       relief shading). 0 means sun is East, 90 North, etc.\n"
         "       Default: 45 (NE).\n"
@@ -83,21 +90,19 @@ int main(int argc, char *argv[]) {
     char *fileish;
     char flt[2048], hdr[2048], savename[2048];
     gf_struct gf;
-    gf_grid *from_grid = &gf.hdr.grid;
-    gf_bounds *from_b = &from_grid->bounds;
+    gf_grid *from_grid = &gf.grid;
 
     /* Extraction grid */
-    gf_grid grid;
-    gf_bounds *b = &grid.bounds;
-    double *b_view[4] = {&b->left, &b->right, &b->bottom, &b->top};
-    int *res_view[2] = {&grid.nx, &grid.ny};
+    gf_grid to_grid;
+    double *b_view[4] = {&to_grid.left, &to_grid.right, &to_grid.bottom, &to_grid.top};
+    int *res_view[2] = {&to_grid.nx, &to_grid.ny};
     double latlng[2] = {BAD_LATLNG, BAD_LATLNG};
     double wh[2] = {0, 0}; /* Width-Height */
     int info = 0, from_point = 0, xy = 0, save = 0;
     double n_sun[3];
     double polar = 30.0, azimuth = 45.0;
 
-    grid.nx = grid.ny = 128;
+    to_grid.nx = to_grid.ny = 128;
 
     while ((opt = getopt(argc, argv, "hiTR:l:r:b:t:B:p:n:w:s:o:P:A:")) != -1) {
         switch (opt) {
@@ -117,20 +122,20 @@ int main(int argc, char *argv[]) {
                     "or '128' for 128x128\n");
                 exit(EXIT_FAILURE);
             } else if (count == 1) {
-                grid.ny = grid.nx;
+                to_grid.ny = to_grid.nx;
             }
             break;
         case 'l':
-            b->left = atof(optarg);
+            to_grid.left = atof(optarg);
             break;
         case 'r':
-            b->right = atof(optarg);
+            to_grid.right = atof(optarg);
             break;
         case 'b':
-            b->bottom = atof(optarg);
+            to_grid.bottom = atof(optarg);
             break;
         case 't':
-            b->top = atof(optarg);
+            to_grid.top = atof(optarg);
             break;
         case 'B':
             count = 0;
@@ -160,13 +165,13 @@ int main(int argc, char *argv[]) {
                 exit(EXIT_FAILURE);
             }
             break;
-        case 'w':
-            from_point = 1;
-            latlng[0] = -atof(optarg);
-            break;
         case 'n':
             from_point = 1;
-            latlng[1] = atof(optarg);
+            latlng[0] = atof(optarg);
+            break;
+        case 'w':
+            from_point = 1;
+            latlng[1] = -atof(optarg);
             break;
         case 'p':
             from_point = 1;
@@ -206,9 +211,10 @@ int main(int argc, char *argv[]) {
 
 
     if (from_point) {
-        gf_init_grid_point(&grid, latlng[0], latlng[1], wh[0], wh[1], grid.ny, grid.nx);
+        gf_init_grid_point(&to_grid, latlng[0], latlng[1], wh[0], wh[1], to_grid.ny, to_grid.nx);
     } else {
-        gf_init_grid_bounds(&grid, grid.bounds.left, grid.bounds.right, grid.bounds.bottom, grid.bounds.top, grid.ny, grid.nx);
+        /* Just calculate dx, dy. */
+        gf_init_grid_bounds(&to_grid, to_grid.left, to_grid.right, to_grid.bottom, to_grid.top, to_grid.ny, to_grid.nx);
     }
 
 
@@ -223,19 +229,18 @@ int main(int argc, char *argv[]) {
 
     while (optind < argc) {
         fileish = argv[optind];
+        len = strlen(fileish);
 
-        if ((len = strlen(fileish)) > 4) {
-            if (!strcmp(fileish + len - 4, ".flt")) {
-                strcpy(flt, fileish);
-            } else if (!strcmp(fileish + len - 4, ".hdr")) {
-                strcpy(hdr, fileish);
-            } else {
-                strcpy(flt, fileish);
-                strcat(flt, ".flt");
-                strcpy(hdr, fileish);
-                strcat(hdr, ".hdr");
-                break;
-            }
+        if (len > 4 && !strcmp(fileish + len - 4, ".flt")) {
+            strcpy(flt, fileish);
+        } else if (len > 4 && !strcmp(fileish + len - 4, ".hdr")) {
+            strcpy(hdr, fileish);
+        } else {
+            strcpy(flt, fileish);
+            strcat(flt, ".flt");
+            strcpy(hdr, fileish);
+            strcat(hdr, ".hdr");
+            break;
         }
         optind++;
     }
@@ -248,37 +253,26 @@ int main(int argc, char *argv[]) {
     }
 
     if (info) {
-        fprintf(stdout,
-            "GridFloat file info:\n"
-            "  float file: %s\n"
-            "  header file: %s\n"
-            "  tile bounds:\n"
-            "    left: %f\n"
-            "    right: %f\n"
-            "    bottom: %f\n"
-            "    top: %f\n"
-            "  cellsize: %fx%f degrees\n"
-            "  resolution: %dx%d\n",
-            flt, hdr,
-            from_b->left,
-            from_b->right,
-            from_b->bottom,
-            from_b->top,
-            from_grid->dx,
-            from_grid->dy,
-            from_grid->nx,
-            from_grid->ny);
+        fprintf(stdout, "data file: %s\nheader file: %s\n", flt, hdr);
+        gf_print_grid_info(from_grid);
     } else if (save) {
         if ((len = strlen(savename)) > 4) {
             if (!strcmp(savename + len - 4, ".png")) {
                 polar *= PI / 180.0;
                 azimuth *= PI / 180.0;
 
+                gf_print_grid_info(&to_grid);
+
                 n_sun[0] = cos(polar) * cos(azimuth);
                 n_sun[1] = cos(polar) * sin(azimuth);
                 n_sun[2] = sin(polar);
-                gf_relief_shade(&gf, &grid, n_sun, savename);
+                gf_relief_shade(&gf, &to_grid, n_sun, savename);
                 exit(EXIT_SUCCESS);
+            } else if (!strcmp(savename + len - 4, ".flt")) {
+                data = (gf_float *)malloc(to_grid.nx * to_grid.ny * sizeof(gf_float));
+                gf_bilinear_interpolate(&gf, &to_grid, data);
+                gf_save(&to_grid, data, savename);
+                free(data);
             }
         }
 
@@ -286,9 +280,9 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
 
     } else {
-        data = (gf_float *)malloc(grid.nx * grid.ny * sizeof(gf_float));
-        gf_bilinear_interpolate(&gf, &grid, data);
-        gf_print(&grid, data, xy);
+        data = (gf_float *)malloc(to_grid.nx * to_grid.ny * sizeof(gf_float));
+        gf_bilinear_interpolate(&gf, &to_grid, data);
+        gf_print(&to_grid, data, xy);
         free(data);
     }
 

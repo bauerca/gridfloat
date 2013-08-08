@@ -46,10 +46,10 @@ void gf_lengths(double lat, double lng, double dlat, double dlng, double ecc, do
 
     if (ecc == 0.0) {
         *dy = dtheta * EQ_RADIUS;
-        *dx = dphi * EQ_RADIUS / cos(theta);
+        *dx = dphi * EQ_RADIUS * cos(theta);
     } else {
         *dy = dtheta * EQ_RADIUS;
-        *dx = dphi * EQ_RADIUS * sqrt(1.0 - (ecc * sin(theta)) * (ecc * sin(theta))) / cos(theta);
+        *dx = dphi * EQ_RADIUS * cos(theta) / sqrt(1.0 - (ecc * sin(theta)) * (ecc * sin(theta)));
     }
 }
 

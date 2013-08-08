@@ -52,7 +52,7 @@ int gf_set_null_png_byte(void **data_ptr) {
     return 0;
 }
 
-void gf_relief_shade(const struct grid_float *gf, const struct gf_grid *grid, double *n_sun, const char *filename) {
+void gf_relief_shade(const gf_struct *gf, const gf_grid *grid, double *n_sun, const char *filename) {
     int i;
     png_byte *shade, **shade_rows;
     
@@ -66,14 +66,14 @@ void gf_relief_shade(const struct grid_float *gf, const struct gf_grid *grid, do
         shade_rows[i] = shade + i * grid->nx;
     }
 
-    grid_float_png(grid->nx, grid->ny, shade_rows, filename);
+    gf_save_png(grid->nx, grid->ny, shade_rows, filename);
 
     free(shade);
     free(shade_rows);
 }
 
 
-int grid_float_png(int nx, int ny, png_byte **data, const char *filename) {
+int gf_save_png(int nx, int ny, png_byte **data, const char *filename) {
 
     FILE *fp;
     png_structp png_ptr;

@@ -8,7 +8,33 @@
 const int LINE_BUF = 256;
 const char * TOKEN_DELIM = " \t";
 
-void grid_float_lengths(double lat, double lng, double dlat, double dlng, double ecc, double *dx, double *dy) {
+void gf_init_grid_point(gf_grid *grid, double lat, double lng, double width, double height, int nlat, int nlng) {
+    grid->ny = nlat;
+    grid->nx = nlng;
+
+    grid->left = lng - 0.5 * width;
+    grid->right = lng + 0.5 * width;
+    grid->bottom = lat - 0.5 * height;
+    grid->top = lat + 0.5 * height;
+
+    grid->dx = (grid->right - grid->left) / ((double)grid->nx);
+    grid->dy = (grid->top - grid->bottom) / ((double)grid->ny);
+}
+
+void gf_init_grid_bounds(gf_grid *grid, double left, double right, double bottom, double top, int nlat, int nlng) {
+    grid->ny = nlat;
+    grid->nx = nlng;
+
+    grid->left = left;
+    grid->right = right;
+    grid->bottom = bottom;
+    grid->top = top;
+
+    grid->dx = (grid->right - grid->left) / ((double)grid->nx);
+    grid->dy = (grid->top - grid->bottom) / ((double)grid->ny);
+}
+
+void gf_lengths(double lat, double lng, double dlat, double dlng, double ecc, double *dx, double *dy) {
     /*
     Returns (dx, dy) for (dlng, dlat) at (lng, lat). The
     default eccentricity is zero which is what Bing and Google
@@ -36,14 +62,12 @@ void grid_float_lengths(double lat, double lng, double dlat, double dlng, double
     }
 }
 
-int grid_float_parse_hdr(const char *hdr_file, struct grid_float_hdr *hdr) {
+int gf_parse_hdr(const char *hdr_file, gf_struct *gf) {
     FILE *fp;
     char line[LINE_BUF];
     char *name, *value, *saveptr;
     int result = 0;
-    struct gf_bounds *b = &hdr->bounds;
-
-    //memset((void *)hdr, 0, sizeof(struct grid_float_hdr));
+    gf_grid *grid = &gf->grid;
 
     fp = fopen(hdr_file, "r");
 
@@ -62,27 +86,32 @@ int grid_float_parse_hdr(const char *hdr_file, struct grid_float_hdr *hdr) {
         value = strtok_r(NULL, TOKEN_DELIM, &saveptr);
 
         if (strcmp(name, "ncols") == 0) {
-            hdr->nx = atol(value);
+            grid->nx = atoi(value);
         } else if (strcmp(name, "nrows") == 0) {
-            hdr->ny = atol(value);
+            grid->ny = atoi(value);
         } else if (strcmp(name, "xllcorner") == 0) {
-            b->left = atof(value);
+            grid->left = atof(value);
         } else if (strcmp(name, "yllcorner") == 0) {
-            b->bottom = atof(value);
+            grid->bottom = atof(value);
         } else if (strcmp(name, "cellsize") == 0) {
-            hdr->cellsize = atof(value);
+            grid->dx = atof(value);
+            grid->dy = atof(value);
+        } else if (strcmp(name, "xcellsize") == 0) {
+            grid->dx = atof(value);
+        } else if (strcmp(name, "ycellsize") == 0) {
+            grid->dy = atof(value);
         } else if (strcmp(name, "NODATA_value") == 0) {
-            hdr->null_value = (gf_float) atof(value);
+            gf->null_value = (gf_float) atof(value);
         } else if (strcmp(name, "byteorder") == 0) {
-            strcpy(hdr->byte_order, value);
+            strcpy(gf->byte_order, value);
         } else {
             fprintf(stderr, "Unrecognized gridgf_float header field: '%s'\n", name);
             result = -1;
         }
     }
 
-    b->right = b->left + (hdr->nx - 1) * hdr->cellsize;
-    b->top = b->bottom + (hdr->ny - 1) * hdr->cellsize;
+    grid->right = grid->left + (grid->nx - 1) * grid->dx;
+    grid->top = grid->bottom + (grid->ny - 1) * grid->dy;
 
     if (fp != NULL) {
         fclose(fp);
@@ -91,14 +120,14 @@ int grid_float_parse_hdr(const char *hdr_file, struct grid_float_hdr *hdr) {
     return result;
 }
 
-void grid_float_close(struct grid_float *gf) {
+void gf_close(gf_struct *gf) {
     if (gf->flt != NULL) {
         fclose(gf->flt);
     }
 }
 
-int grid_float_open(const char *hdr_file, const char *flt_file, struct grid_float *gf) {
-    if (grid_float_parse_hdr(hdr_file, &gf->hdr) != 0) {
+int grid_float_open(const char *hdr_file, const char *flt_file, gf_struct *gf) {
+    if (gf_parse_hdr(hdr_file, gf) != 0) {
         return -1;
     }
 
@@ -112,14 +141,14 @@ int grid_float_open(const char *hdr_file, const char *flt_file, struct grid_floa
     return 0;
 }
 
-int gf_get_line(long ii, long jj_start, long jj_end, const struct grid_float *gf, gf_float *line) {
-    fseek(gf->flt, sizeof(gf_float) * (ii * gf->hdr.nx + jj_start), SEEK_SET);
+int gf_get_line(long ii, long jj_start, long jj_end, const gf_struct *gf, gf_float *line) {
+    fseek(gf->flt, sizeof(gf_float) * (ii * gf->grid.nx + jj_start), SEEK_SET);
     fread((void *)line, sizeof(gf_float), jj_end - jj_start, gf->flt);
     return 0;
 }
 
 
-void grid_float_print(const struct gf_grid *grid, gf_float *data, int xy) {
+void gf_print(const gf_grid *grid, gf_float *data, int xy) {
     long ni, nj, i, j, k;
     int c, nc = 1;
 
@@ -171,4 +200,51 @@ void grid_float_print(const struct gf_grid *grid, gf_float *data, int xy) {
 */
     }
     //fprintf(stdout, "]");
+}
+
+int gf_write_hdr(gf_grid *grid, const char *filename) {
+    FILE *fp;
+    char line[LINE_BUF];
+
+    fp = fopen(filename, "w");
+    if (fp == NULL) {
+        return -1;
+    }
+
+    fprintf(fp, "ncols         %d\n", grid->nx);
+    fprintf(fp, "nrows         %d\n", grid->ny);
+    fprintf(fp, "xllcorner     %f\n", grid->left);
+    fprintf(fp, "yllcorner     %f\n", grid->bottom);
+    fprintf(fp, "xcellsize     %f\n", grid->dx);
+    fprintf(fp, "ycellsize     %f\n", grid->dy);
+    fprintf(fp, "NODATA_value  -9999\n");
+    fprintf(fp, "byteorder     LSBFIRST");
+
+    fclose(fp);
+
+    return 0;
+}
+
+void gf_save(gf_grid *grid, gf_float *data, const char *flt_filename) {
+    FILE *flt;
+    char filename[2048];
+    int len = strlen(flt_filename);
+
+    flt = fopen(flt_filename, "wb");
+    if (flt == NULL) {
+        fprintf(stderr, "Could not open %s for writing.\n", flt_filename);
+        return;
+    }
+
+    fwrite((void *)data, sizeof(gf_float), grid->nx * grid->ny, flt);
+    fclose(flt);
+
+    strncpy(filename, flt_filename, len - 4);
+    filename[len - 4] = '\0';
+    strcat(filename, ".hdr");
+    
+    if (gf_write_hdr(grid, filename)) {
+        fprintf(stderr, "Could not open %s for writing.\n", filename);
+        return;
+    }
 }

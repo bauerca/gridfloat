@@ -6,11 +6,11 @@
 #include "gridfloat.h"
 
 void gf_relief_shade(
-    const struct grid_float *gf,
-    const struct gf_grid *grid,
+    const gf_struct *gf,
+    const gf_grid *to_grid,
     double *n_sun,
     const char *filename);
 
-int grid_float_png(int nx, int ny, png_byte **data, const char *filename);
+int gf_save_png(int nx, int ny, png_byte **data, const char *filename);
 
 #endif

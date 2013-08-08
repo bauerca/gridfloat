@@ -82,13 +82,17 @@ int main(int argc, char *argv[]) {
     gf_float *data;
     char *fileish;
     char flt[2048], hdr[2048], savename[2048];
-    struct grid_float gf;
-    struct gf_grid grid;
-    struct gf_bounds *b = &grid.bounds;
+    gf_struct gf;
+    gf_grid *from_grid = &gf.hdr.grid;
+    gf_bounds *from_b = &from_grid->bounds;
+
+    /* Extraction grid */
+    gf_grid grid;
+    gf_bounds *b = &grid.bounds;
     double *b_view[4] = {&b->left, &b->right, &b->bottom, &b->top};
     int *res_view[2] = {&grid.nx, &grid.ny};
-    double midpt[2] = {BAD_LATLNG, BAD_LATLNG};
-    double size[2] = {0, 0};
+    double latlng[2] = {BAD_LATLNG, BAD_LATLNG};
+    double wh[2] = {0, 0}; /* Width-Height */
     int info = 0, from_point = 0, xy = 0, save = 0;
     double n_sun[3];
     double polar = 30.0, azimuth = 45.0;
@@ -144,12 +148,12 @@ int main(int argc, char *argv[]) {
         case 's':
             count = 0;
             while (optarg != NULL) {
-                size[count] = atof(strsep(&optarg, "x"));
+                wh[count] = atof(strsep(&optarg, "x"));
                 count++;
             }
 
             if (count == 1) {
-                size[1] = size[0];
+                wh[1] = wh[0];
             } else if (count > 2) {
                 fprintf(stderr, "Bad -s option. Too many params.\n  Examples: "
                     "'-s 1.0x1.0' or just '-s 1.0'.\n");
@@ -158,17 +162,17 @@ int main(int argc, char *argv[]) {
             break;
         case 'w':
             from_point = 1;
-            midpt[0] = -atof(optarg);
+            latlng[0] = -atof(optarg);
             break;
         case 'n':
             from_point = 1;
-            midpt[1] = atof(optarg);
+            latlng[1] = atof(optarg);
             break;
         case 'p':
             from_point = 1;
             count = 0;
             while (optarg != NULL) {
-                midpt[count] = atof(strsep(&optarg, ","));
+                latlng[count] = atof(strsep(&optarg, ","));
                 count++;
             }
 
@@ -202,11 +206,11 @@ int main(int argc, char *argv[]) {
 
 
     if (from_point) {
-        b->left = midpt[0] - 0.5 * size[0];
-        b->right = midpt[0] + 0.5 * size[0];
-        b->bottom = midpt[1] - 0.5 * size[1];
-        b->top = midpt[1] + 0.5 * size[1];
+        gf_init_grid_point(&grid, latlng[0], latlng[1], wh[0], wh[1], grid.ny, grid.nx);
+    } else {
+        gf_init_grid_bounds(&grid, grid.bounds.left, grid.bounds.right, grid.bounds.bottom, grid.bounds.top, grid.ny, grid.nx);
     }
+
 
     /* Final unhandled args are gridfloat and header filename pair
        or the shared prefix (no extension) of both gridfloat and
@@ -237,7 +241,8 @@ int main(int argc, char *argv[]) {
     }
 
 
-    if (grid_float_open(hdr, flt, &gf)) {
+    if (gf_open(hdr, flt, &gf)) {
+        fprintf(stderr, "Failed to open %s or %s.\n\n", hdr, flt);
         print_usage();
         exit(EXIT_FAILURE);
     }
@@ -252,14 +257,17 @@ int main(int argc, char *argv[]) {
             "    right: %f\n"
             "    bottom: %f\n"
             "    top: %f\n"
-            "  cellsize: %f degrees\n"
-            "  resolution: %ldx%ld\n",
+            "  cellsize: %fx%f degrees\n"
+            "  resolution: %dx%d\n",
             flt, hdr,
-            gf.hdr.bounds.left,
-            gf.hdr.bounds.right,
-            gf.hdr.bounds.bottom,
-            gf.hdr.bounds.top,
-            gf.hdr.cellsize, gf.hdr.nx, gf.hdr.ny);
+            from_b->left,
+            from_b->right,
+            from_b->bottom,
+            from_b->top,
+            from_grid->dx,
+            from_grid->dy,
+            from_grid->nx,
+            from_grid->ny);
     } else if (save) {
         if ((len = strlen(savename)) > 4) {
             if (!strcmp(savename + len - 4, ".png")) {
@@ -279,11 +287,11 @@ int main(int argc, char *argv[]) {
 
     } else {
         data = (gf_float *)malloc(grid.nx * grid.ny * sizeof(gf_float));
-        grid_float_bilinear_interpolate(&gf, &grid, data);
-        grid_float_print(&grid, data, xy);
+        gf_bilinear_interpolate(&gf, &grid, data);
+        gf_print(&grid, data, xy);
         free(data);
     }
 
-    grid_float_close(&gf);
+    gf_close(&gf);
     exit(EXIT_SUCCESS);
 }

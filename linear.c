@@ -5,9 +5,9 @@
 #include <limits.h>
 
 
-int grid_float_bilinear(
-    const struct grid_float *gf,
-    const struct gf_grid *grid,
+int gf_bilinear(
+    const gf_struct *gf,
+    const gf_grid *to_grid,
     void *set_data_xtras,
     int (*set_data)(
         gf_float *quad,
@@ -24,7 +24,7 @@ int grid_float_bilinear(
     int i, j;             /* Indices for subgrid */
     double lat, lng, latlng[2]; /* For passing to op */
     double dx, dy;              /* For requested subgrid */
-    long nx = grid->nx, ny = grid->ny;
+    long nx = to_grid->nx, ny = to_grid->ny;
 
     void *d = data;
 
@@ -42,8 +42,7 @@ int grid_float_bilinear(
     double w[2];
 
     /* Aliases */
-    const struct grid_float_hdr *hdr = &gf->hdr;
-    const struct gf_bounds *b = &grid->bounds, *hb = &hdr->bounds;
+    const gf_grid *from_grid = &gf->grid;
     FILE *flt = gf->flt;
 
     /* Allocate output array */
@@ -146,7 +145,7 @@ int gf_set_null_gf_float(void **data_ptr) {
     return 0;
 }
 
-int grid_float_bilinear_interpolate_kernel(gf_float *quad, double cellsize, double *w, double *latlng, void *xtras, void **data_ptr) {
+int gf_bilinear_interpolate_kernel(gf_float *quad, double cellsize, double *w, double *latlng, void *xtras, void **data_ptr) {
     gf_float **dptr = (gf_float **)data_ptr;
 
     //fprintf(stdout, "%f, %f, %f, %f\n", quad[0], quad[1], quad[2], quad[3]);
@@ -159,15 +158,15 @@ int grid_float_bilinear_interpolate_kernel(gf_float *quad, double cellsize, doub
 }
 
 
-int grid_float_bilinear_interpolate(const struct grid_float *gf, const struct gf_grid *grid, gf_float *data) {
-    return grid_float_bilinear(gf, grid, NULL,
-        &grid_float_bilinear_interpolate_kernel,
+int gf_bilinear_interpolate(const struct grid_float *gf, const struct gf_grid *grid, gf_float *data) {
+    return gf_bilinear(gf, grid, NULL,
+        &gf_bilinear_interpolate_kernel,
         &gf_set_null_gf_float,
         (void *)data);
 }
 
 
-int grid_float_bilinear_gradient_kernel(gf_float *quad, double cellsize, double *w, double *latlng, void *xtras, void **data_ptr) {
+int gf_bilinear_gradient_kernel(gf_float *quad, double cellsize, double *w, double *latlng, void *xtras, void **data_ptr) {
     double **grad_ptr = (double **)data_ptr;
     double csz_m = -1.0; 
 
@@ -193,7 +192,7 @@ int gf_set_null_gradient(void **data_ptr) {
 }
 
 
-int grid_float_bilinear_gradient(const struct grid_float *gf, const struct gf_grid *grid, double *gradient) {
-    return grid_float_bilinear(gf, grid, NULL,
-        &grid_float_bilinear_gradient_kernel, &gf_set_null_gradient, (void *)gradient);
+int gf_bilinear_gradient(const struct grid_float *gf, const struct gf_grid *grid, double *gradient) {
+    return gf_bilinear(gf, grid, NULL,
+        &gf_bilinear_gradient_kernel, &gf_set_null_gradient, (void *)gradient);
 }

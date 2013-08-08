@@ -6,8 +6,8 @@
 
 
 int gf_bicubic(
-    const struct grid_float *gf,
-    const struct gf_grid *grid,
+    const gf_struct *gf,
+    const gf_grid *to_grid,
     void *set_data_xtras,
     int (*set_data)(
         gf_float nine[][3],
@@ -24,7 +24,7 @@ int gf_bicubic(
     int i, j;             /* Indices for subgrid */
     double lat, lng, latlng[2]; /* For passing to op */
     double dx, dy;              /* For requested subgrid */
-    long nx = grid->nx, ny = grid->ny;
+    long nx = to_grid->nx, ny = to_grid->ny;
     struct gf_bounds in;
 
     void *d = data;
@@ -43,8 +43,9 @@ int gf_bicubic(
     double w[2];
 
     /* Aliases */
-    const struct grid_float_hdr *hdr = &gf->hdr;
-    const struct gf_bounds *b = &grid->bounds, *hb = &hdr->bounds;
+    const gf_grid *from_grid = &gf->hdr.grid;
+    const gf_hdr *hdr = &gf->hdr;
+    const gf_bounds *b = &to_grid->bounds, *hb = &hdr->bounds;
     FILE *flt = gf->flt;
 
     /* For cubic operations, the bounds within which we can interpolate
@@ -66,8 +67,8 @@ int gf_bicubic(
     jj_right = ((int)((b->right - hb->left) / hdr->cellsize + 0.5)) + 2; /* exclusive */
     jj_right = jj_right < hdr->nx ? jj_right : hdr->nx - 1;
 
-    dx = (b->right - b->left) / ((double)grid->nx);
-    dy = (b->top - b->bottom) / ((double)grid->ny);
+    dx = to_grid->dx;
+    dy = to_grid->dy;
 
     line1 = (gf_float *)malloc((jj_right - jj_left) * sizeof(gf_float));
     line2 = (gf_float *)malloc((jj_right - jj_left) * sizeof(gf_float));

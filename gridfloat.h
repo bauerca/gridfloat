@@ -10,44 +10,40 @@
 
 typedef float gf_float;
 
-struct gf_bounds {
+typedef struct gf_grid {
+    int nx;
+    int ny;
+    double dx;
+    double dy;
     double left;
     double right;
     double bottom;
     double top;
-};
+} gf_grid;
 
-struct grid_float_hdr {
-    long nx;
-    long ny;
-    struct gf_bounds bounds;
-    double cellsize;
+typedef struct gf_struct {
+    gf_grid grid;
     gf_float null_value;
     char byte_order[64];
-};
-
-
-struct gf_grid {
-    int nx;
-    int ny;
-    struct gf_bounds bounds;
-};
-
-struct grid_float {
-    struct grid_float_hdr hdr;
     FILE *flt;         /* Descriptor for .flt file */
-};
+} gf_struct;
 
-void grid_float_lengths(double lat, double lng, double dlat, double dlng, double ecc, double *dx, double *dy);
+void gf_init_grid_point(gf_grid *grid, double lat, double lng, double width, double height, int nlat, int nlng);
 
-int grid_float_parse_hdr(const char *hdr_file, struct grid_float_hdr *hdr);
+void gf_init_grid_bounds(gf_grid *grid, double left, double right, double bottom, double top, int nlat, int nlng);
 
-int grid_float_open(const char *hdr_file, const char *flt_file, struct grid_float *gf);
+void gf_lengths(double lat, double lng, double dlat, double dlng, double ecc, double *dx, double *dy);
 
-void grid_float_close(struct grid_float *gf);
+int gf_parse_hdr(const char *hdr_file, gf_struct *gf);
 
-int gf_get_line(long ii, long jj_start, long jj_end, const struct grid_float *gf, gf_float *line);
+int gf_open(const char *hdr_file, const char *flt_file, gf_struct *gf);
 
-void grid_float_print(const struct gf_grid *grid, gf_float *data, int xy);
+void gf_close(gf_struct *gf);
+
+int gf_get_line(long ii, long jj_start, long jj_end, const gf_struct *gf, gf_float *line);
+
+void gf_print(const gf_grid *grid, gf_float *data, int xy);
+
+void gf_save(gf_grid *grid, gf_float *data, const char *prefix);
 
 #endif

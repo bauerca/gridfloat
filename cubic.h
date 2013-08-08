@@ -5,8 +5,8 @@
 
 
 int gf_bicubic(
-    const struct grid_float *gf,
-    const struct gf_grid *grid,
+    const gf_struct *gf,
+    const gf_grid *to_grid,
     void *set_data_xtras,
     int (*set_data)(
         gf_float nine[][3],
@@ -23,6 +23,6 @@ int gf_bicubic(
 
 int gf_bicubic_gradient_kernel(gf_float nine[][3], double cellsize, double *w, double *latlng, void *xtras, void **data_ptr);
 
-int gf_bicubic_gradient(const struct grid_float *gf, const struct gf_grid *grid, double *gradient);
+int gf_bicubic_gradient(const gf_struct *gf, const gf_grid *to_grid, double *gradient);
 
 #endif

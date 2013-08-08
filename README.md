@@ -12,6 +12,19 @@ Slice and dice GridFloat files from the command line.
 
 Boom.
 
+Want 3D?
+
+```
+> ./gridfloat -n 45.37344 -w 121.69566 -s 0.2 -R 512 -A 180 -P 20 -o mthood3d.stl ./n46w122/floatn46w122_13
+```
+
+Snapshot from [MeshLab](http://meshlab.sourceforge.net/):
+
+![Mt. Hood 3D](https://raw.github.com/bauerca/gridfloat/master/img/mthood3d.png)
+
+Bam.
+
+
 ## Installation
 
 The following will produce the executable, `gridfloat` in
@@ -100,11 +113,12 @@ can use the second case.
        (so that a[i, j] gives longitude increasing with i and
        latitude increasing with j).
   -o:  Output subgrid data to a file. Detects output format based
-       on file extension. For a .png extension, see "PNG output
-       options" below. Otherwise, gridfloat will assume
-       you want to save another GridFloat file. In this case, it
-       will write the appropriate data and header files, appending
-       .flt and .hdr, respectively, to the argument of -o.
+       on file extension. Supported: (.png, .stl). For a .png
+       extension, see "PNG output options" below. Otherwise,
+       gridfloat will assume you want to save another GridFloat
+       file. In this case, it will write the appropriate data
+       and header files, appending .flt and .hdr, respectively,
+       to the argument of -o.
 ```
 
 ### PNG output options

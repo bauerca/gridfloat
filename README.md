@@ -65,7 +65,8 @@ can use the second case.
   -R:  Resolution of extraction. If a single integer is
        supplied, then the resolution is the same in both
        directions. Otherwise, the format is (by example):
-       '-R 128x256'.
+       '-R 128x256' where the first number is the resolution
+       in the x-direction (along lines of latitude).
   -l:  Left bound for extraction.
   -r:  Right bound for extraction.
   -b:  Bottom bound for extraction.
@@ -81,16 +82,28 @@ can use the second case.
   -p:  Lat/Lng midpoint of extraction. Must use with '-s'
        option. Example: '-p -123,42'.
   -s:  Size of box (in degrees) around midpoint. Used with '-p'
-       and '-w','-n' options. Examples: '-s 1.0x1.0' or just '-s 1'.
+       and '-n','-w' options. Examples: '-s 1.0x1.0' or just '-s 1'.
+       If a rectangular size is requested, the first number refers
+       to the width of the box (along x; i.e. along lines of
+       latitude).
   -T:  Transpose and invert along y before printing the array
        (so that a[i, j] gives longitude increasing with i and
        latitude increasing with j).
+  -o:  Output subgrid data to a file. Detects output format based
+       on file extension. For a .png extension, see "PNG output
+       options" below. Otherwise, gridfloat will assume
+       you want to save another GridFloat file. In this case, it
+       will write the appropriate data and header files, appending
+       .flt and .hdr, respectively, to the argument of -o.
 ```
 
 ### PNG output options
 
+When png output is specified, gridfloat automatically renders
+a shaded relief map. The following options determine which
+slopes are sunny.
+
 ```
-  -o:  Output subgrid data to a file. Must match *.png.
   -A:  Azimuthal angle (in degrees) of view toward sun (for
        relief shading). 0 means sun is East, 90 North, etc.
        Default: 45 (NE).

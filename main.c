@@ -57,11 +57,17 @@ void print_usage(void) {
         "       (so that a[i, j] gives longitude increasing with i and\n"
         "       latitude increasing with j).\n"
         "  -o:  Output subgrid data to a file. Detects output format based\n"
-        "       on file extension. Supported: (.png, .flt). If a GridFloat\n"
-        "       file is written (.flt), an accompanying header file (.hdr)\n"
-        "       will also be written with the same prefix.\n"
+        "       on file extension. For a .png extension, see \"PNG output\n"
+        "       options\" below. Otherwise, gridfloat will assume\n"
+        "       you want to save another GridFloat file. In this case, it\n"
+        "       will write the appropriate data and header files, appending\n"
+        "       .flt and .hdr, respectively, to the argument of -o.\n"
         "\n"
         "PNG output options:\n"
+        "  When png output is specified, gridfloat automatically renders\n"
+        "  a shaded relief map. The following options determine which\n"
+        "  slopes are sunny.\n"
+        "\n"
         "  -A:  Azimuthal angle (in degrees) of view toward sun (for\n"
         "       relief shading). 0 means sun is East, 90 North, etc.\n"
         "       Default: 45 (NE).\n"
@@ -256,29 +262,25 @@ int main(int argc, char *argv[]) {
         fprintf(stdout, "data file: %s\nheader file: %s\n", flt, hdr);
         gf_print_grid_info(from_grid);
     } else if (save) {
-        if ((len = strlen(savename)) > 4) {
-            if (!strcmp(savename + len - 4, ".png")) {
-                polar *= PI / 180.0;
-                azimuth *= PI / 180.0;
+        len = strlen(savename);
+        if (len > 4 && !strcmp(savename + len - 4, ".png")) {
+            polar *= PI / 180.0;
+            azimuth *= PI / 180.0;
 
-                gf_print_grid_info(&to_grid);
+            gf_print_grid_info(&to_grid);
 
-                n_sun[0] = cos(polar) * cos(azimuth);
-                n_sun[1] = cos(polar) * sin(azimuth);
-                n_sun[2] = sin(polar);
-                gf_relief_shade(&gf, &to_grid, n_sun, savename);
-                exit(EXIT_SUCCESS);
-            } else if (!strcmp(savename + len - 4, ".flt")) {
-                data = (gf_float *)malloc(to_grid.nx * to_grid.ny * sizeof(gf_float));
-                gf_bilinear_interpolate(&gf, &to_grid, data);
-                gf_save(&to_grid, data, savename);
-                free(data);
-            }
+            n_sun[0] = cos(polar) * cos(azimuth);
+            n_sun[1] = cos(polar) * sin(azimuth);
+            n_sun[2] = sin(polar);
+            gf_relief_shade(&gf, &to_grid, n_sun, savename);
+        } else {
+            data = (gf_float *)malloc(to_grid.nx * to_grid.ny * sizeof(gf_float));
+            gf_bilinear_interpolate(&gf, &to_grid, data);
+            gf_save(&to_grid, data, savename);
+            free(data);
         }
 
-        fprintf(stderr, "Only png output supported.\n");
-        exit(EXIT_FAILURE);
-
+        exit(EXIT_SUCCESS);
     } else {
         data = (gf_float *)malloc(to_grid.nx * to_grid.ny * sizeof(gf_float));
         gf_bilinear_interpolate(&gf, &to_grid, data);

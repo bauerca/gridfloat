@@ -215,28 +215,29 @@ int gf_write_hdr(gf_grid *grid, const char *filename) {
     return 0;
 }
 
-void gf_save(gf_grid *grid, gf_float *data, const char *flt_filename) {
+void gf_save(gf_grid *grid, gf_float *data, const char *prefix) {
     FILE *flt;
     char filename[2048];
-    int len = strlen(flt_filename);
 
-    flt = fopen(flt_filename, "wb");
+    strcpy(filename, prefix);
+    strcat(filename, ".hdr");
+
+    if (gf_write_hdr(grid, filename)) {
+        fprintf(stderr, "Could not open %s for writing.\n", filename);
+        return;
+    }
+
+    strcpy(filename, prefix);
+    strcat(filename, ".flt");
+
+    flt = fopen(filename, "wb");
     if (flt == NULL) {
-        fprintf(stderr, "Could not open %s for writing.\n", flt_filename);
+        fprintf(stderr, "Could not open %s for writing.\n", filename);
         return;
     }
 
     fwrite((void *)data, sizeof(gf_float), grid->nx * grid->ny, flt);
     fclose(flt);
-
-    strncpy(filename, flt_filename, len - 4);
-    filename[len - 4] = '\0';
-    strcat(filename, ".hdr");
-    
-    if (gf_write_hdr(grid, filename)) {
-        fprintf(stderr, "Could not open %s for writing.\n", filename);
-        return;
-    }
 }
 
 void gf_print_grid_info(gf_grid *grid) {

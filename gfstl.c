@@ -63,7 +63,7 @@ int gf_save_stl(gf_grid *grid, gf_float *data, const char *filename) {
         return -1;
     }
 
-    n = 2 * grid->nx * grid->ny;
+    n = 2 * (grid->nx - 1) * (grid->ny - 1);
     gf_cellsize_meters(grid, &dxm, &dym);
 
     fwrite((void *)hdr, 1, STL_HDR_LEN, fp);

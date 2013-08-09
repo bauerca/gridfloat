@@ -15,7 +15,7 @@ Boom.
 Want 3D?
 
 ```
-> ./gridfloat -n 45.37344 -w 121.69566 -s 0.2 -R 512 -A 180 -P 20 -o mthood3d.stl ./n46w122/floatn46w122_13
+> ./gridfloat -n 45.37344 -w 121.69566 -s 0.2 -R 512 -o mthood3d.stl ./n46w122/floatn46w122_13
 ```
 
 Snapshot from [MeshLab](http://meshlab.sourceforge.net/):

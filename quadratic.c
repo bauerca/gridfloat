@@ -1,11 +1,11 @@
-#include "cubic.h"
+#include "quadratic.h"
 
 #include <math.h>
 #include <stdlib.h>
 #include <limits.h>
 
 
-int gf_bicubic(
+int gf_biquadratic(
     const gf_struct *gf,
     const gf_grid *to_grid,
     void *set_data_xtras,
@@ -150,7 +150,7 @@ int gf_bicubic(
 }
 
 
-int gf_bicubic_gradient_kernel(gf_float nine[][3], const gf_grid *from_grid, double *w, double *latlng, void *xtras, void **data_ptr) {
+int gf_biquadratic_gradient_kernel(gf_float nine[][3], const gf_grid *from_grid, double *w, double *latlng, void *xtras, void **data_ptr) {
     double **dptr = (double **)data_ptr;
     double dx_m = -1.0, dy_m = -1.0; 
     int i, k;
@@ -210,7 +210,7 @@ int gf_set_null_gradient(void **data_ptr) {
 }
 
 
-int gf_bicubic_gradient(const gf_struct *gf, const gf_grid *grid, double *gradient) {
-    return gf_bicubic(gf, grid, NULL,
-        &gf_bicubic_gradient_kernel, &gf_set_null_gradient, (void *)gradient);
+int gf_biquadratic_gradient(const gf_struct *gf, const gf_grid *grid, double *gradient) {
+    return gf_biquadratic(gf, grid, NULL,
+        &gf_biquadratic_gradient_kernel, &gf_set_null_gradient, (void *)gradient);
 }

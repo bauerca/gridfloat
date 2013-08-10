@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 #include "gfpng.h"
-#include "cubic.h"
+#include "quadratic.h"
 
 static
 void write_row_callback(png_structp png_ptr, png_uint_32 row, int pass) {
@@ -19,7 +19,7 @@ int gf_relief_shade_kernel(gf_float nine[][3], const gf_grid *from_grid, double 
 
     n_sun = (double *)xtras;
 
-    gf_bicubic_gradient_kernel(nine, from_grid, w, latlng, (void *)NULL, (void **)&grad_view);
+    gf_biquadratic_gradient_kernel(nine, from_grid, w, latlng, (void *)NULL, (void **)&grad_view);
 
     if (grad[0] == GF_NULL_VAL || grad[1] == GF_NULL_VAL) {
         fprintf(stderr, "gf_relief_shade_kernel: Something wrong. Please report.\n");
@@ -56,7 +56,7 @@ void gf_relief_shade(const gf_struct *gf, const gf_grid *grid, double *n_sun, co
     shade = (png_byte *)malloc(grid->nx * grid->ny * sizeof(png_byte));
     shade_rows = (png_byte **)malloc(grid->ny * sizeof(png_byte *));
 
-    gf_bicubic(gf, grid, (void *)n_sun,
+    gf_biquadratic(gf, grid, (void *)n_sun,
         &gf_relief_shade_kernel, &gf_set_null_png_byte, (void *)shade);
 
     for (i = 0; i < grid->ny; ++i) {

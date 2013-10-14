@@ -9,15 +9,16 @@ int gf_bilinear(
     const gf_struct *gf,
     const gf_grid *to_grid,
     void *set_data_xtras,
-    int (*set_data)(
-        gf_float *quad,
-        const gf_grid *from_grid,
-        double *weights,
-        double *latlng,
-        void *xtras,
-        void **data_ptr    /* Pointer to the current position in the buffer.
-                              Position needs to be incremented by the callback. */
-    ),
+    gf_bilinear_kernel *set_data,
+//    int (*set_data)(
+//        gf_float *quad,
+//        const gf_grid *from_grid,
+//        double *weights,
+//        double *latlng,
+//        void *xtras,
+//        void **data_ptr    /* Pointer to the current position in the buffer.
+//                              Position needs to be incremented by the callback. */
+//    ),
     int (*set_null)(void **),
     void *data
 ) {

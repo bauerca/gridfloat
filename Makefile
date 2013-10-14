@@ -1,7 +1,7 @@
 CC=gcc
 CFLAGS=-c -Wall
 LDFLAGS=-lpng -lm
-SOURCES=main.c gridfloat.c linear.c quadratic.c gfpng.c gfstl.c
+SOURCES=src/main.c src/gridfloat.c src/linear.c src/quadratic.c src/gfpng.c src/gfstl.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=gridfloat
 

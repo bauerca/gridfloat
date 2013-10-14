@@ -10,6 +10,24 @@
 
 typedef float gf_float;
 
+/**
+ * Grid
+ *
+ * A grid of lat/lng points. The x-direction points along lines
+ * of latitude; y along lines of longitude.
+ *
+ * @nx - Resolution along lines of latitude.
+ * @ny - Resolution along lines of longitude.
+ * @dx - Cell width in x.
+ * @dy - Cell width in y.
+ * @left - Longitude of left-most grid points (smallest
+ *   in x). In the western hemisphere, this value is negative.
+ * @right - Longitude of right-most grid points.
+ * @bottom - Latitude of bottom-most grid points (smallest
+ *   y-values).
+ * @top - Latitude of top-most grid points.
+ *
+ */ 
 typedef struct gf_grid {
     int nx;
     int ny;
@@ -21,6 +39,13 @@ typedef struct gf_grid {
     double top;
 } gf_grid;
 
+/**
+ * The master struct. Represents a gridfloat data/header
+ * pair. Holds (most importantly) a grid and a pointer
+ * to an open .flt file. Use gf_open(...) to initialize
+ * the struct.
+ *
+ */
 typedef struct gf_struct {
     gf_grid grid;
     gf_float null_value;
@@ -28,6 +53,11 @@ typedef struct gf_struct {
     FILE *flt;         /* Descriptor for .flt file */
 } gf_struct;
 
+/**
+ * Create a grid based on a lat/lng point and a width/height
+ * pair given in degrees. Width is along lines of latitude, height
+ * is along lines of longitude.
+ */
 void gf_init_grid_point(gf_grid *grid, double lat, double lng, double width, double height, int nlat, int nlng);
 
 void gf_init_grid_bounds(gf_grid *grid, double left, double right, double bottom, double top, int nlat, int nlng);

@@ -9,7 +9,6 @@ void write_row_callback(png_structp png_ptr, png_uint_32 row, int pass) {
     // No op
 }
 
-static
 int gf_relief_shade_kernel(gf_float nine[][3], const gf_grid *from_grid, double *w, double *latlng, void *xtras, void **data_ptr) {
     int i;
     png_byte **shade_ptr = (png_byte **)data_ptr;

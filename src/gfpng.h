@@ -5,6 +5,11 @@
 
 #include "gridfloat.h"
 
+int gf_relief_shade_kernel(
+    gf_float nine[][3],
+    const gf_grid *from_grid,
+    double *w, double *latlng, void *xtras, void **data_ptr);
+
 void gf_relief_shade(
     const gf_struct *gf,
     const gf_grid *to_grid,

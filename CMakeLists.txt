@@ -9,9 +9,17 @@ set(SOURCES
   src/gridfloat.c
   src/gfpng.c
   src/gfstl.c
+  src/rtree.c
 )
 
 add_library(gf STATIC ${SOURCES})
+set_target_properties(gf PROPERTIES COMPILE_FLAGS "-g")
 
 add_executable(gridfloat src/main.c)
 target_link_libraries(gridfloat gf png z)
+
+add_executable(gridfloat-test test/main.c)
+target_link_libraries(gridfloat-test gf m)
+set_target_properties(gridfloat-test PROPERTIES COMPILE_FLAGS "-g")
+
+add_test(gridfloat-test "${EXECUTABLE_OUTPUT_PATH}/gridfloat-test")

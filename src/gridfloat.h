@@ -80,4 +80,16 @@ void gf_save(gf_grid *grid, gf_float *data, const char *prefix);
 
 void gf_print_grid_info(gf_grid *grid);
 
+
+typedef struct gf_db {
+    gf_struct *tiles;
+    int count;
+} gf_db;
+
+void gf_init_db(gf_db *db);
+
+int gf_load_db(const char *dirpath, gf_db *db);
+
+void gf_close_db(gf_db *db);
+
 #endif

@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include "../src/gridfloat.h"
 #include "../src/rtree.h"
+#include "../src/db.h"
+#include "../src/sort.h"
 
 
 static int test_passed = 0;

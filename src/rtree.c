@@ -1,4 +1,5 @@
 #include "gridfloat.h"
+#include "sort.h"
 #include "rtree.h"
 #include <stdlib.h>
 #include <string.h>
@@ -39,57 +40,6 @@ int gf_rtree_insert(gf_struct *gf, gf_rtree_node *root) {
 }
 */
 
-static
-void gf_sift_down(gf_struct **gfs, int start, int end,
-        int (*cmp)(gf_struct *gf1, gf_struct *gf2))
-{
-    int child, root, node_swap;
-    gf_struct *gf_swap;
-
-    root = start;
-    child = 2 * root + 1; /* Left child. */
-
-    while (child < end) {
-        //printf("%d\n", child);
-        node_swap = root;
-        /* Swap root for first child? */
-        if (cmp(gfs[root], gfs[child]) < 0)
-            node_swap = child;
-        /* Swap root for second child? */
-        if (child + 1 < end && cmp(gfs[node_swap], gfs[child + 1]) < 0)
-            node_swap = child + 1;
-        /* Require a swap? */
-        if (node_swap != root) {
-            gf_swap = gfs[node_swap];
-            gfs[node_swap] = gfs[root];
-            gfs[root] = gf_swap;
-            root = node_swap;
-            child = 2 * root + 1;
-        } else return;
-    }
-}
-
-/* Heapsort of gf_structs. */
-int gf_sort(gf_struct **gfs, int len, int (*cmp)(gf_struct *gf1, gf_struct *gf2)) {
-    int start, end;
-    gf_struct *gf_swap;
-    printf("starting sort\n");
-
-    for (start = (len - 2) / 2; start >= 0; start--)
-        gf_sift_down(gfs, start, len, cmp);
-
-    printf("built heap\n");
-
-    for (end = len - 1; end > 0; end--) {
-        gf_swap = gfs[end];
-        gfs[end] = gfs[0];
-        gfs[0] = gf_swap;
-        
-        gf_sift_down(gfs, 0, end, cmp);
-    }
-
-    return 0;
-}
 
 
 #define CMP(side) \
@@ -105,6 +55,26 @@ CMP(right)
 CMP(top)
 CMP(bottom)
 
+static
+int cmp_midx(gf_struct *tile1, gf_struct *tile2) {
+    double midx1 = 0.5 * (tile1->grid.left + tile1->grid.right),
+           midx2 = 0.5 * (tile2->grid.left + tile2->grid.right);
+
+    if (midx1 < midx2) return -1;
+    else if (midx1 == midx2) return 0;
+    else return 1;
+}
+
+static
+int cmp_midy(gf_struct *tile1, gf_struct *tile2) {
+    double midy1 = 0.5 * (tile1->grid.left + tile1->grid.right),
+           midy2 = 0.5 * (tile2->grid.left + tile2->grid.right);
+
+    if (midy1 < midy2) return -1;
+    else if (midy1 == midy2) return 0;
+    else return 1;
+}
+
 /*
 gf_db must have been loaded. An rtree is a nested btree. That is,
 for every subtree of the outermost tree, there is another "sibling"
@@ -115,6 +85,8 @@ another sibling tree, and so on for the remaining dimensions.
 
 */
 
+static int nodes_allocd = 0;
+
 gf_rtree_node *gf_get_rtree_node() {
     int i;
     gf_rtree_node *node;
@@ -122,55 +94,76 @@ gf_rtree_node *gf_get_rtree_node() {
     node = (gf_rtree_node *)malloc(sizeof(gf_rtree_node));
     memset((void *)node, '\0', sizeof(gf_rtree_node));
 
+    nodes_allocd++;
     return node;
 }
 
 static int depth = 0;
 
-gf_rtree_node *gf_build_rtree(gf_struct **sorted_gfs, int len) {
-    int i, jump, split, prev_split;
-    gf_rtree_node *node;
-    /* Traversing given tree will produce array of gf_structs
-       */
 
-    printf("build tree at depth %d\n", depth);
-    depth++;
+/* Builds the level of nodes below the level passed in as
+ * <nodes>. Each node of the new level is formed by grouping
+ * NODE_SIZE nodes from the passed in set. It is assumed that
+ * the given nodes array is sorted. The sort order should be one
+ * that correlates adjacency in the array with spatial proximity.
+ *
+ * @param nodes (in/out) Pointer to an array of nodes. On function exit,
+ *      the array will be replaced by a new array of nodes
+ *      representing the next level in the tree.
+ * @param len (in/out) On input, the address of the length of the <nodes>
+ *      array. On exit, the length will be overwritten with the length
+ *      of the newly created level (the output <nodes> array).
+ */
+int gf_build_rtree_level(gf_rtree_node **nodes, int *len) {
+    int i, j, ii, n1, n2;
+    gf_rtree_node *node, *child, *nodes2;
+    gf_bounds *nb, *cb;
 
-    node = gf_get_rtree_node();
-    if (len < NODE_SIZE) {
-        for (i = 0; i < len; i++)
-            node->gfs[i] = sorted_gfs[i];
-        depth--;
-        return node;
+    n1 = *len;
+    n2 = (n1 + NODE_SIZE - 1) / NODE_SIZE;
+
+    nodes2 = (gf_rtree_node *)malloc(n2 * sizeof(gf_rtree_node));
+    memset((void *)nodes2, 0, n2 * sizeof(gf_rtree_node));
+
+    ii = 0;
+    for (i = 0; i < n2; i++) {
+        node = nodes2 + i;
+
+        for (j = 0; j < NODE_SIZE; j++) {
+            if (ii == n1)
+                break;
+
+            node->children[j] = child = nodes[ii++];
+            cb = &child->bounds;
+            nb = &node->bounds;
+
+            if (j == 0)
+                memcpy(nb, cb, sizeof(gf_bounds));
+            else {
+                if (cb->left < nb->left) nb->left = cb->left;
+                if (cb->right > nb->right) nb->right = cb->right;
+                if (cb->bottom < nb->bottom) nb->bottom = cb->bottom;
+                if (cb->top > nb->top) nb->top = cb->top;
+            }
+        }
     }
-    
-    jump = len / NODE_SIZE;
-    prev_split = -1;
-    for (i = 1; i <= NODE_SIZE; i++) {
-        split = (i == NODE_SIZE) ? len : i * jump;
-        if (i < NODE_SIZE)
-            node->gfs[i - 1] = sorted_gfs[split];
 
-        /* Create new node */
-        if (split - prev_split > 1)
-            node->children[i - 1] = gf_build_rtree(
-                sorted_gfs + prev_split + 1, 
-                split - prev_split - 1);
-        else
-            node->children[i - 1] = NULL;
+    *nodes = nodes2;
+    *len = n2;
 
-        prev_split = split;
-    }
-
-    depth--;
-    return node;
+    return 0;
 }
 
 
+/* Only call this with the root node as argument! */
 void gf_free_rtree(gf_rtree_node *tree) {
     if (tree == NULL) return;
-    int i;
-    for (i = 0; i < NODE_SIZE; i++)
-        gf_free_rtree(tree->children[i]);
+    /* Delete entire level above. */
+    if (tree->children[0] != NULL)
+        gf_free_rtree(tree->children[0]);
     free(tree);
 }
+
+
+
+

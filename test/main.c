@@ -33,10 +33,10 @@ static void test(int (*func)(void), const char *name) {
 
 static char dbpath[256] = "";
 
-int test_load_db() {
+int test_load_db_tiles() {
     gf_db db;
     gf_init_db(&db);
-    gf_load_db(dbpath, &db);
+    gf_db_load_tiles(dbpath, &db);
     gf_close_db(&db);
     return 0;
 }
@@ -56,7 +56,7 @@ int test_sort_db() {
     gf_struct **sorted_tiles, *tile;
 
     gf_init_db(&db);
-    gf_load_db(dbpath, &db);
+    gf_db_load_tiles(dbpath, &db);
 
     sorted_tiles =
         (gf_struct **)malloc(db.count * sizeof(gf_struct *));
@@ -73,25 +73,32 @@ int test_sort_db() {
     return 0;
 }
 
-int test_rtree_db() {
-    int i;
+int test_open_db() {
     gf_db db;
-    gf_struct **sorted_tiles, *tile;
-    gf_rtree_node *tree;
+    gf_open_db(dbpath, &db);
+    gf_close_db(&db);
+    return 0;
+}
 
-    gf_init_db(&db);
-    gf_load_db(dbpath, &db);
+int test_search_db() {
+    gf_db db;
+    gf_open_db(dbpath, &db);
+    gf_rtree_node **leaves;
+    int found;
+    gf_bounds b;
 
-    sorted_tiles =
-        (gf_struct **)malloc(db.count * sizeof(gf_struct *));
-    for (i = 0; i < db.count; i++)
-        sorted_tiles[i] = &db.tiles[i];
+    b.left = -125.1;
+    b.right = -124.9;
+    b.bottom = 48.9;
+    b.top = 49.1;
 
-    gf_sort(sorted_tiles, db.count, cmp);
-    tree = gf_build_rtree(sorted_tiles, db.count);
+    leaves = (gf_rtree_node **)malloc(db.count * sizeof(gf_rtree_node *));
+    gf_search_rtree(&b, db.tree, leaves, &found);
+    
+    check(found > 0);
+    printf("found %d\n", found);
 
-    gf_free_rtree(tree);
-    free(sorted_tiles);
+    free(leaves);
     gf_close_db(&db);
     return 0;
 }
@@ -135,9 +142,10 @@ int main(int argc, char **argv)
     }
 
     
-    test(test_load_db, "test loading a gridfloat db");
+    test(test_load_db_tiles, "test loading a gridfloat db");
     test(test_sort_db, "sort the tiles in the gridfloat db");
-    test(test_rtree_db, "make a btree out of the sorted tiles");
+    test(test_open_db, "load the tiles, sort them, and make an rtree");
+    test(test_search_db, "search db for some intersecting tiles");
 	printf("\nPASSED: %d\nFAILED: %d\n", test_passed, test_failed);
 
     return 0;

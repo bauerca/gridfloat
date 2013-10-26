@@ -9,7 +9,9 @@ set(SOURCES
   src/gridfloat.c
   src/gfpng.c
   src/gfstl.c
+  src/sort.c
   src/rtree.c
+  src/db.c
 )
 
 add_library(gf STATIC ${SOURCES})

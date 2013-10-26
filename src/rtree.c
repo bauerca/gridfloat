@@ -116,14 +116,18 @@ static int depth = 0;
  */
 int gf_build_rtree_level(gf_rtree_node **nodes, int *len) {
     int i, j, ii, n1, n2;
-    gf_rtree_node *node, *child, *nodes2;
+    gf_rtree_node *node, *child, *nodes1, *nodes2;
     gf_bounds *nb, *cb;
 
     n1 = *len;
     n2 = (n1 + NODE_SIZE - 1) / NODE_SIZE;
 
+    nodes1 = *nodes;
     nodes2 = (gf_rtree_node *)malloc(n2 * sizeof(gf_rtree_node));
     memset((void *)nodes2, 0, n2 * sizeof(gf_rtree_node));
+
+    printf("current level: %d nodes -> new level: %d nodes\n", n1,
+        n2);
 
     ii = 0;
     for (i = 0; i < n2; i++) {
@@ -133,7 +137,8 @@ int gf_build_rtree_level(gf_rtree_node **nodes, int *len) {
             if (ii == n1)
                 break;
 
-            node->children[j] = child = nodes[ii++];
+            printf("  processing old node %d\n", ii);
+            node->children[j] = child = &nodes1[ii++];
             cb = &child->bounds;
             nb = &node->bounds;
 
@@ -146,10 +151,56 @@ int gf_build_rtree_level(gf_rtree_node **nodes, int *len) {
                 if (cb->top > nb->top) nb->top = cb->top;
             }
         }
+        printf("made node with bbox: %f, %f, %f, %f\n",
+            nb->left, nb->right, nb->bottom, nb->top);
     }
 
     *nodes = nodes2;
     *len = n2;
+
+    return 0;
+}
+
+static int compares = 0;
+
+/* @param leaves (out) Should be preallocated array of pointers with
+ *      length at least as large as the number of leaves in the
+ *      tree.
+ * @param found (out) Number of leaves found and placed in given
+ *      leaves array.
+ */
+int gf_search_rtree(gf_bounds *query, gf_rtree_node *root,
+    gf_rtree_node **leaves, int *found)
+{
+    int i, child_found;
+    gf_rtree_node *child;
+    gf_bounds *b;
+
+    *found = 0;
+
+    /* Test for intersection. */
+    b = &root->bounds;
+    printf("compares = %d\n", ++compares);
+    if (query->right >= b->left && query->left <= b->right &&
+        query->bottom <= b->top && query->top >= b->bottom) {
+        
+        if (root->gf != NULL) {
+            leaves[0] = root;
+            *found = 1;
+            return 0;
+        }
+
+        for (i = 0; i < NODE_SIZE; i++) {
+            if ((child = root->children[i]) == NULL)
+                break;
+
+            gf_search_rtree(query, child, leaves + *found,
+                &child_found);
+
+            *found += child_found;
+        }
+
+    }
 
     return 0;
 }

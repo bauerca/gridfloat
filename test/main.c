@@ -87,10 +87,10 @@ int test_search_db() {
     int found;
     gf_bounds b;
 
-    b.left = -125.1;
-    b.right = -124.9;
-    b.bottom = 48.9;
-    b.top = 49.1;
+    b.left = -121.1;
+    b.right = -120.9;
+    b.bottom = 44.9;
+    b.top = 45.1;
 
     leaves = (gf_rtree_node **)malloc(db.count * sizeof(gf_rtree_node *));
     gf_search_rtree(&b, db.tree, leaves, &found);
@@ -99,6 +99,30 @@ int test_search_db() {
     printf("found %d\n", found);
 
     free(leaves);
+    gf_close_db(&db);
+    return 0;
+}
+
+int test_get_data_db() {
+    gf_db db;
+    gf_grid grid;
+    float data[4];
+    int i;
+
+    grid.left = -121.001;
+    grid.right = -120.999;
+    grid.bottom = 44.999;
+    grid.top = 45.001;
+    grid.nx = 2;
+    grid.ny = 2;
+
+    gf_open_db(dbpath, &db);
+    gf_db_get_data(&grid, &db, data);
+
+    for (i = 0; i < 4; i++)
+        printf("%f, ", data[i]);
+    printf("\n");
+    
     gf_close_db(&db);
     return 0;
 }
@@ -146,6 +170,7 @@ int main(int argc, char **argv)
     test(test_sort_db, "sort the tiles in the gridfloat db");
     test(test_open_db, "load the tiles, sort them, and make an rtree");
     test(test_search_db, "search db for some intersecting tiles");
+    test(test_get_data_db, "get four values from a database, each from a different tile");
 	printf("\nPASSED: %d\nFAILED: %d\n", test_passed, test_failed);
 
     return 0;

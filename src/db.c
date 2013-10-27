@@ -2,6 +2,7 @@
 #include "rtree.h"
 #include "sort.h"
 #include "db.h"
+#include "linear.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -154,5 +155,33 @@ void gf_close_db(gf_db *db) {
         gf_close(&db->tiles[i]);
     gf_free_rtree(db->tree);
     free(db->tiles);
+}
+
+
+int gf_db_get_data(gf_grid *grid, gf_db *db, float *data) {
+    int i, found;
+    gf_rtree_node **nodes;
+    gf_bounds b;
+    gf_struct *gf;
+
+    nodes = (gf_rtree_node **)malloc(db->count * sizeof(gf_rtree_node *));
+
+    b.left = grid->left;
+    b.right = grid->right;
+    b.bottom = grid->bottom;
+    b.top = grid->top;
+
+    gf_search_rtree(&b, db->tree, nodes, &found);
+
+    if (found == 0)
+        return -1;
+
+    for (i = 0; i < found; i++) {
+        gf = nodes[i]->gf;
+        gf_bilinear_interpolate(gf, grid, data);
+    }
+
+    free(nodes);
+    return 0;
 }
 

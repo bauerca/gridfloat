@@ -60,9 +60,9 @@ int gf_bilinear(
     latlng[0] = lat = to_grid->top;
     for (i = 0, ii = INT_MIN; i < to_ny; ++i) {
         if (lat > from_grid->top || lat < from_grid->bottom) {
-            for (j = 0; j < to_nx; ++j) {
-                (*set_null)(&d);
-            }
+            if (set_null != NULL)
+                for (j = 0; j < to_nx; ++j)
+                    (*set_null)(&d);
         } else {
 
             // Read in data two lines at a time; the two lines
@@ -93,7 +93,7 @@ int gf_bilinear(
 
             for (j = 0; j < to_nx; ++j) {
                 if (lng > from_grid->right || lng < from_grid->left) {
-                    (*set_null)(&d);
+                    if (set_null != NULL) (*set_null)(&d);
                 } else {
                     jj = (int) ((lng - from_grid->left) / from_grid->dx);
                     jjj = jj - jj_left;
@@ -149,7 +149,7 @@ int gf_bilinear_interpolate_kernel(gf_float *quad, const gf_grid *from_grid, dou
 int gf_bilinear_interpolate(const gf_struct *gf, const gf_grid *grid, gf_float *data) {
     return gf_bilinear(gf, grid, NULL,
         &gf_bilinear_interpolate_kernel,
-        &gf_set_null_gf_float,
+        NULL, //&gf_set_null_gf_float,
         (void *)data);
 }
 

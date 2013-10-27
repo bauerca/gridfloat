@@ -162,6 +162,7 @@ int gf_build_rtree_level(gf_rtree_node **nodes, int *len) {
 }
 
 static int compares = 0;
+static int sdepth = 0;
 
 /* @param leaves (out) Should be preallocated array of pointers with
  *      length at least as large as the number of leaves in the
@@ -180,13 +181,18 @@ int gf_search_rtree(gf_bounds *query, gf_rtree_node *root,
 
     /* Test for intersection. */
     b = &root->bounds;
-    printf("compares = %d\n", ++compares);
+    //printf("compares = %d\n", ++compares);
+    printf("depth: %d, bbox: %f, %f, %f, %f\n", sdepth,
+        b->left, b->right, b->bottom, b->top);
     if (query->right >= b->left && query->left <= b->right &&
         query->bottom <= b->top && query->top >= b->bottom) {
+        printf("  intersection! %p\n", root->gf);
         
         if (root->gf != NULL) {
+            printf("  leaf node. adding to results.\n");
             leaves[0] = root;
             *found = 1;
+            sdepth--;
             return 0;
         }
 
@@ -194,14 +200,18 @@ int gf_search_rtree(gf_bounds *query, gf_rtree_node *root,
             if ((child = root->children[i]) == NULL)
                 break;
 
+            printf("  checking child...\n");
+            sdepth++;
             gf_search_rtree(query, child, leaves + *found,
                 &child_found);
 
             *found += child_found;
         }
 
-    }
+    } else
+        printf("  no intersection!\n");
 
+    sdepth--;
     return 0;
 }
 

@@ -12,6 +12,7 @@ set(SOURCES
   src/sort.c
   src/rtree.c
   src/db.c
+  src/tile.c
 )
 
 add_library(gf STATIC ${SOURCES})

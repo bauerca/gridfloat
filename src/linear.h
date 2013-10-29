@@ -8,7 +8,7 @@ typedef int (gf_bilinear_kernel)(gf_float *quad,
     double *weights,
     double *latlng,
     void *xtras,
-    void **data_ptr
+    void *data_ptr
 );
 
 /**
@@ -30,15 +30,15 @@ int gf_bilinear(
 //        void **data_ptr    /* Pointer to the current position in the buffer.
 //                              Position needs to be incremented by the callback. */
 //    ),
-    int (*set_null)(void **data_ptr),
-    void *data
+    void *data,
+    size_t elem_size
 );
 
-int gf_bilinear_interpolate_kernel(gf_float *quad, const gf_grid *from_grid, double *w, double *latlng, void *xtras, void **data_ptr);
+int gf_bilinear_interpolate_kernel(gf_float *quad, const gf_grid *from_grid, double *w, double *latlng, void *xtras, void *data_ptr);
 
 int gf_bilinear_interpolate(const gf_struct *gf, const gf_grid *to_grid, gf_float *data);
 
-int gf_bilinear_gradient_kernel(gf_float *quad, const gf_grid *from_grid, double *w, double *latlng, void *xtras, void **data_ptr);
+int gf_bilinear_gradient_kernel(gf_float *quad, const gf_grid *from_grid, double *w, double *latlng, void *xtras, void *data_ptr);
 
 int gf_bilinear_gradient(const gf_struct *gf, const gf_grid *to_grid, double *gradient);
 

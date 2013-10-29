@@ -1,6 +1,7 @@
 #ifndef GF_DB_H
 #define GF_DB_H
 
+#include "rtree.h"
 
 typedef struct gf_db {
     gf_struct *tiles;

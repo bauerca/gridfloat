@@ -6,6 +6,7 @@
 #include "../src/rtree.h"
 #include "../src/db.h"
 #include "../src/sort.h"
+#include "../src/tile.h"
 
 
 static int test_passed = 0;
@@ -107,23 +108,41 @@ int test_get_data_db() {
     gf_db db;
     gf_grid grid;
     float data[4];
-    int i;
+    int i, n = 2;
+    double wh = 0.002;
 
-    grid.left = -121.001;
-    grid.right = -120.999;
-    grid.bottom = 44.999;
-    grid.top = 45.001;
-    grid.nx = 2;
-    grid.ny = 2;
+    gf_init_grid_point(&grid, 45, -121, wh, wh, n, n);
 
     gf_open_db(dbpath, &db);
     gf_db_get_data(&grid, &db, data);
 
-    for (i = 0; i < 4; i++)
+    for (i = 0; i < n*n; i++)
         printf("%f, ", data[i]);
     printf("\n");
     
     gf_close_db(&db);
+    return 0;
+}
+
+int test_quad_interp() {
+    const int n = 2;
+    int i, j, nq = (n+2)*(n+2);
+    float quads[4*nq];
+    float out[n*n];
+
+    for (i = 0; i < 4*nq; i++)
+        quads[i] = 1.0f;
+
+    //for (i = 0; i < 4; i++)
+    //    for (j = 0; j < (n+2)*(n+2); j++)
+    //        printf("%f, ", ((float (*)[4])quads)[i][j]);
+    //printf("\n");
+
+    quad_interp(quads, n, n, out);
+
+    for (i = 0; i < n*n; i++)
+        check(out[i] == 1.0f);
+
     return 0;
 }
 
@@ -171,6 +190,7 @@ int main(int argc, char **argv)
     test(test_open_db, "load the tiles, sort them, and make an rtree");
     test(test_search_db, "search db for some intersecting tiles");
     test(test_get_data_db, "get four values from a database, each from a different tile");
+    test(test_quad_interp, "smooth/interp four tiles to one at half resolution");
 	printf("\nPASSED: %d\nFAILED: %d\n", test_passed, test_failed);
 
     return 0;

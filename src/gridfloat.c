@@ -29,7 +29,7 @@ void gf_lengths(double lat, double lng, double dlat, double dlng, double ecc, do
     /*
     Returns (dx, dy) for (dlng, dlat) at (lng, lat). The
     default eccentricity is zero which is what Bing and Google
-    use. Real scientists use e^2 ~ 0.006.
+    use. Real scientists use e^2 ~ 0.006. :)
 
     lat : latitude at which to perform projection
     lng : longitude at which to perform projection

@@ -159,7 +159,7 @@ void gf_close_db(gf_db *db) {
 
 
 int gf_db_get_data(gf_grid *grid, gf_db *db, float *data) {
-    int i, found;
+    int i, j, found;
     gf_rtree_node **nodes;
     gf_bounds b;
     gf_struct *gf;

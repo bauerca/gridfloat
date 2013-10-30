@@ -21,6 +21,9 @@ set_target_properties(gf PROPERTIES COMPILE_FLAGS "-g")
 add_executable(gridfloat src/main.c)
 target_link_libraries(gridfloat gf png z)
 
+add_executable(tiler src/tiler.c)
+target_link_libraries(tiler gf m)
+
 add_executable(gridfloat-test test/main.c)
 target_link_libraries(gridfloat-test gf m)
 set_target_properties(gridfloat-test PROPERTIES COMPILE_FLAGS "-g")

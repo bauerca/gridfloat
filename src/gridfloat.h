@@ -8,7 +8,38 @@
 
 #define GF_NULL_VAL -9999.0
 
+#define ERR_RET(op, err, msg) if (((err) = (op)) != 0) { \
+    fprintf(stderr, "%s: %s\n", __func__, msg); return err; }
+
+
+typedef struct gf_data {
+    float *elev;
+    double *gradx;
+    double *grady;
+    unsigned char *shade;
+} gf_data;
+
+typedef enum {
+    ELEVATION = 001,
+    GRADX = 002,
+    GRADY = 004,
+    SHADE = 010
+} gf_data_t;
+
+void gf_init_data(int types, size_t sz, gf_data *data);
+
+
 typedef float gf_float;
+
+
+typedef struct gf_bounds {
+    double left;
+    double right;
+    double bottom;
+    double top;
+} gf_bounds;
+
+void gf_init_bounds_point(gf_bounds *b, double lat, double lng, double w, double h);
 
 /**
  * Grid
@@ -75,6 +106,8 @@ void gf_close(gf_struct *gf);
 int gf_get_line(long ii, long jj_start, long jj_end, const gf_struct *gf, gf_float *line);
 
 void gf_print(const gf_grid *grid, gf_float *data, int xy);
+
+int gf_write_hdr(gf_grid *grid, const char *filename);
 
 void gf_save(gf_grid *grid, gf_float *data, const char *prefix);
 

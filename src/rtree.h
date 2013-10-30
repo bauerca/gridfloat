@@ -3,6 +3,8 @@
 
 #define NODE_SIZE 3
 
+#include "gridfloat.h"
+
 /**
  * Gridfloat implementation of a R-Tree.
  * Each level of the R-Tree is an array of nodes. Each node
@@ -21,12 +23,6 @@
  * midpoint along the Hilbert curve in 2D.
  */
 
-typedef struct gf_bounds {
-    double left;
-    double right;
-    double bottom;
-    double top;
-} gf_bounds;
 
 typedef struct gf_rtree_node {
     struct gf_rtree_node *children[NODE_SIZE];

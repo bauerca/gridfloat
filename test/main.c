@@ -1,13 +1,16 @@
 
-#include <getopt.h>
-#include <string.h>
-#include <stdlib.h>
 #include "../src/gridfloat.h"
 #include "../src/rtree.h"
 #include "../src/db.h"
 #include "../src/sort.h"
 #include "../src/tile.h"
 
+#include <getopt.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 static int test_passed = 0;
 static int test_failed = 0;
@@ -146,6 +149,48 @@ int test_quad_interp() {
     return 0;
 }
 
+int test_tile_path() {
+    char path[128];
+    struct stat st;
+    int err;
+    gf_tile_schema schema = {
+        2, 2, 0,
+        { -121.1, -120.9, 42.9, 43.0 },
+        "[x]/[y]/[z]/tile.flt",
+        "."
+    };
+
+    gf_get_tile_path(&schema, 1, 2, 3, path);
+
+    check(strcmp("./1/2/3/tile.flt", path) == 0);
+    err = lstat("./1/2/3", &st);
+    check(err == 0);
+    check(S_ISDIR(st.st_mode));
+    rmdir("./1/2/3");
+    rmdir("./1/2");
+    rmdir("./1");
+
+    return 0;
+}
+
+int test_tile() {
+    gf_db db;
+    const int n = 128;
+    gf_tile_schema schema = {
+        n, n, 1,
+        { -121.1, -120.9, 42.9, 43.0 },
+        "[z]/[y]/[x]/tile",
+        "./tiles"
+    };
+
+    mkdir(schema.dir, 0777);
+
+    gf_open_db(dbpath, &db);
+    gf_build_tile(0, 0, 0, &schema, &db, NULL);
+    gf_close_db(&db);
+    return 0;
+}
+
 static struct option options[] = {
 	{ "help",	no_argument,		NULL, 'h' },
 	{ "db",	required_argument,	NULL, 'd' },
@@ -191,6 +236,8 @@ int main(int argc, char **argv)
     test(test_search_db, "search db for some intersecting tiles");
     test(test_get_data_db, "get four values from a database, each from a different tile");
     test(test_quad_interp, "smooth/interp four tiles to one at half resolution");
+    test(test_tile_path, "get pathname from template");
+    test(test_tile, "tile a database of gridfloat!");
 	printf("\nPASSED: %d\nFAILED: %d\n", test_passed, test_failed);
 
     return 0;

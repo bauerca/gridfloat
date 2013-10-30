@@ -65,11 +65,13 @@ int gf_db_load_tiles(const char *path, gf_db *db) {
     DIR *dir, *dir2;
     struct dirent ent, ent2, *pent, *pent2;
     struct stat st;
-    char subpath[256], flt[256], errbuf[1024];
+    char subpath[256], flt[256], errbuf[256];
     int baselen, err = 0;
 
-    if ((dir = opendir(path)) == NULL)
+    if ((dir = opendir(path)) == NULL) {
+        fprintf(stderr, "gf_db_load_tiles: invalid directory\n");
         return 1;
+    }
 
     readdir_r(dir, &ent, &pent);
     while (pent != NULL) {
@@ -135,15 +137,12 @@ next:
     return err;
 }
 
-
 int gf_open_db(const char *path, gf_db *db) {
     int err;
 
     gf_init_db(db);
-    err = gf_db_load_tiles(path, db);
-
-    if (err == 0)
-        gf_db_build_rtree(db);
+    ERR_RET(gf_db_load_tiles(path, db), err, "Problem loading tiles");
+    ERR_RET(gf_db_build_rtree(db), err, "Problem building tree");
 
     return err;
 }

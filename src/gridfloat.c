@@ -5,6 +5,26 @@
 #include <limits.h>
 #include <math.h>
 
+
+/**
+ * Data structure
+ */
+
+void gf_init_data(int types, size_t sz, gf_data *data) {
+    memset((void *)data, 0, sizeof(gf_data));
+
+    if (types & ELEVATION)
+        data->elev = (float *)malloc(sz * sizeof(float));
+    if (types & GRADX)
+        data->gradx = (double *)malloc(sz * sizeof(double));
+    if (types & GRADY)
+        data->grady = (double *)malloc(sz * sizeof(double));
+    if (types & SHADE)
+        data->shade = (unsigned char *)malloc(sz * sizeof(unsigned char));
+}
+
+
+
 const int LINE_BUF = 256;
 const char * TOKEN_DELIM = " \t";
 
@@ -20,6 +40,15 @@ void gf_init_grid_point(gf_grid *grid, double lat, double lng, double width, dou
     grid->dx = (grid->right - grid->left) / ((double)(grid->nx - 1));
     grid->dy = (grid->top - grid->bottom) / ((double)(grid->ny - 1));
 }
+
+
+void gf_init_bounds_point(gf_bounds *b, double lat, double lng, double w, double h) {
+    b->left = lng - 0.5 * w;
+    b->right = lng + 0.5 * w;
+    b->bottom = lat - 0.5 * h;
+    b->top = lat + 0.5 * h;
+}
+
 
 void gf_init_grid_bounds(gf_grid *grid, double left, double right, double bottom, double top, int nlat, int nlng) {
     gf_init_grid_point(grid, 0.5 * (top + bottom), 0.5 * (left + right), right - left, top - bottom, nlat, nlng);
